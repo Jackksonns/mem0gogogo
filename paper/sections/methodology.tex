@@ -1,7 +1,7 @@
 \section{Methodology}
 \label{sec:methodology}
 
-Our framework, \textbf{Mem0-Cognitive}, reframes memory management as an \textit{Active Inference} process. Instead of passively storing all interactions, the system continuously predicts the future utility of each memory trace and adapts its retention strategy accordingly. Figure~\ref{fig:architecture} illustrates the overall architecture, which comprises three core modules: (1) Emotion-Weighted Forgetting, (2) Offline Sleep Consolidation, and (3) Meta-Cognitive Adaptation.
+Our framework, \textbf{Mem0-Cognitive}, is a mechanism-level combination of three independently-ablatable modules layered on top of a standard vector-store-backed memory: (1) Emotion-Weighted Retention (\S\ref{subsec:forgetting}), (2) Asynchronous Consolidation via Schema-Style Summarisation (\S\ref{subsec:consolidation}), and (3) Adaptive Parameter Tuning via a top-$k$-weighted heuristic (\S\ref{subsec:meta_learning}). We describe the system in mechanistic terms --- a storage policy, a summarisation policy, and a parameter-update policy --- rather than as an instance of any particular cognitive-architectural theory; biological inspirations are acknowledged where they directly motivate a design choice and are otherwise not used as evidence. Figure~\ref{fig:architecture} gives the overall layout.
 
 \subsection{Problem Formulation}
 Let $\mathcal{M}_t = \{m_1, m_2, \dots, m_n\}$ denote the memory store at time $t$, where each memory $m_i$ is a tuple $(c_i, e_i, ts_i, \theta_i)$ consisting of content $c_i$, embedding $e_i$, timestamp $ts_i$, and cognitive parameters $\theta_i$. The goal is to learn a policy $\pi_\phi$ that optimizes memory operations (store, update, compress, delete) to maximize long-term retrieval utility:
@@ -21,6 +21,7 @@ Given a memory $m_i$ with base strength $S_{\text{base}}$ and emotional valence 
 \end{equation}
 where $\lambda \in [0, 2]$ controls the \textit{emotional inertia} (higher $\lambda$ implies stronger resistance to forgetting for emotional events). The retention probability at time $\Delta t$ after encoding is then:
 \begin{equation}
+\label{eq:retention}
     \mathcal{R}_{\text{affective}}(m_i, \Delta t) = \exp\left(-\frac{\Delta t}{S_{\text{base}} \cdot (1 + \lambda \cdot E_i)}\right)
 \end{equation}
 
@@ -35,14 +36,15 @@ where $\alpha, \beta, \gamma$ are hyperparameters balancing the contributions ($
 \subsection{Offline Sleep Consolidation as Schema Induction}
 \label{subsec:consolidation}
 
-Inspired by hippocampal-neocortical dialogue during NREM sleep~\cite{mcclelland1995complementary}, our consolidation engine operates as an \textit{offline schema induction module}. Unlike online reflection mechanisms that block user interaction, sleep consolidation runs asynchronously during system idle periods.
+Drawing loose inspiration from models of sleep-dependent memory consolidation~\cite{mcclelland1995complementary}, our consolidation engine runs as an \emph{asynchronous schema-style summarisation pass} over the existing memory store. The biological analogy motivates the design choice of running the pass offline, during system idle periods, rather than synchronously on every write; we make no claim that the engine models the hippocampal--neocortical system at any finer level of detail.
 
-Given a cluster of episodic memories $\mathcal{C} = \{m_1, \dots, m_k\}$ identified via semantic similarity (cosine similarity $> \theta_{cluster}$), the consolidation process performs \textbf{Contrastive Abstraction}:
+Given a cluster of episodic memories $\mathcal{C} = \{m_1, \dots, m_k\}$ identified via semantic similarity (cosine similarity $> \theta_{cluster}$), the consolidation process performs the following steps:
 \begin{enumerate}
-    \item \textbf{Cluster Identification}: Group temporally disjoint but semantically coherent memories using DBSCAN on embedding space.
+    \item \textbf{Cluster Identification}: Group semantically coherent memories using a simple \emph{greedy compatible-cluster assignment} pass over the embedding space. Each candidate memory is either assigned to the first existing cluster whose centroid cosine-similarity exceeds $\theta_{\text{cluster}}$, or seeds a new cluster if no compatible one exists. This is not DBSCAN and not hierarchical clustering; a drop-in replacement with DBSCAN or HDBSCAN is straightforward and is left as future work.
     \item \textbf{Invariant Extraction}: Prompt the LLM to identify recurring patterns while discarding incidental specifics. For example, transforming ``bought coffee on Monday'' and ``ordered latte on Wednesday'' into ``has a regular coffee routine''.
-    \item \textbf{Schema Generation}: Create a new semantic memory $m_{semantic}$ with generalized content and inherited metadata.
-    \item \textbf{Trace Pruning}: Archive or delete the original episodic traces to reduce redundancy.
+    \item \textbf{Schema Generation}: Create a new semantic memory $m_{semantic}$ with generalised content and inherited metadata, and write it back to the store.
+    \item \textbf{Trace Pruning}: Delete the original episodic traces and append an audit record to a structured consolidation log, so that every consolidated record can be traced back to its source set.
+    \item \textbf{Non-Recursive Fallback}: If the summarisation path fails (e.g.\ the configured LLM is unavailable), fall back to a deterministic \emph{keep-best} strategy in a single non-recursive step; this preserves the cluster's highest-scoring record rather than re-entering the summarisation path.
 \end{enumerate}
 
 Formally, the consolidation operator $\mathcal{T}_{sleep}$ maps a set of episodic memories to a semantic schema:
@@ -65,4 +67,15 @@ Rather than invoking a full Bayesian Optimization loop \textemdash\ which would 
 \end{equation}
 where $\Pi_{\mathcal{B}}$ projects onto the box $\mathcal{B}$ of admissible parameter ranges and $k = \min(5, |\mathcal{D}_{1:t}|)$ in our experiments. For the first $n_0$ observations we sample $\phi$ uniformly from $\mathcal{B}$ to seed the history. This is not a Gaussian Process and we make no acquisition-function claim; the heuristic is chosen for its constant per-turn cost, its lack of extra dependencies, and the fact that it degrades gracefully when the per-user sample size is small. Replacing it with a proper GP-BO step with Expected Improvement is a drop-in future extension and is left as future work.
 
-To mitigate cold-start issues, we initialize new users with \textit{population priors} recorded in the source release as the default parameter values $(\lambda = 1, \tau_{\text{base}} = 100)$. User clustering into coarse profile groups (e.g.\ ``forgetful'', ``nostalgic'', ``business-efficient'') is supported by the configuration but is disabled for all experiments in this paper and is also left as future work.
+To mitigate cold-start issues, we initialise new users with \textit{population priors} recorded in the source release as the default parameter values $(\lambda = 1, \tau_{\text{base}} = 100)$. User clustering into coarse profile groups (e.g.\ ``forgetful'', ``nostalgic'', ``business-efficient'') is supported by the configuration but is disabled for all experiments in this paper and is also left as future work.
+
+\subsection{Emotion Extractor: Implementation and Reliability Caveats}
+\label{subsec:emotion_extractor}
+
+The emotion-intensity term $E_i \in [0, 1]$ used in Eq.~\ref{eq:retention} is obtained by a two-path extractor: a zero-shot prompt against the configured LLM (primary path, see Appendix~\ref{app:prompts}), with a deterministic lexicon-based fallback when the LLM call is unavailable. The implementation is a software engineering primitive and we deliberately avoid presenting it as a psychological measurement instrument. In particular:
+\begin{itemize}
+    \item \textbf{No gold-standard calibration.} We have not validated the extractor against any gold-annotated emotion-intensity corpus, and we report no inter-annotator agreement, cross-model consistency, or test--retest reliability numbers in this paper. Those validations are an explicit item in the reproducibility checklist (\texttt{evaluation\_cognitive/README.md}) and a precondition for claiming the extractor as a standalone scientific contribution.
+    \item \textbf{Method-aware logging, not method-aware retention.} Every stored memory records whether its emotion value came from the LLM path or the lexicon fallback; the retention law itself treats the two paths identically. If downstream work establishes that one path is systematically more reliable than the other, the logged method field can be used to weight the retention contribution without changing the retention formula itself.
+    \item \textbf{Fail-open behaviour.} When both paths fail, $E_i$ is set to a neutral default and a warning is emitted. The retention formula then collapses to the emotion-agnostic Ebbinghaus curve, which is the safe default and is covered by the regression tests described in \S\ref{subsec:forgetting}.
+\end{itemize}
+In summary, the extractor is best read as a \emph{per-memory salience tag provided by the host system} rather than as a validated cognitive measurement; the retention law's regression properties (monotonic in $E_i$, Ebbinghaus-collapse when $\lambda = 0$ or the term is disabled) hold for any extractor satisfying the $E_i \in [0, 1]$ contract.
