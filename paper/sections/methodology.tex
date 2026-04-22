@@ -51,27 +51,18 @@ Formally, the consolidation operator $\mathcal{T}_{sleep}$ maps a set of episodi
 \end{equation}
 where $\bigoplus$ denotes concatenation with temporal ordering, and $\text{LLM}_{abstract}$ is a prompt-guided abstraction function (see Appendix~\ref{app:prompts}).
 
-\subsection{Meta-Cognitive Adaptation via Bayesian Optimization}
+\subsection{Meta-Cognitive Adaptation via a Top-$k$-Weighted Heuristic}
 \label{subsec:meta_learning}
 
-A key limitation of existing systems is their use of static, one-size-fits-all parameters. We model memory management as a Markov Decision Process (MDP) where:
-\begin{itemize}
-    \item \textbf{State} $s_t$: Current memory distribution statistics (mean score, variance, cluster density) and user profile features.
-    \item \textbf{Action} $a_t$: Adjustments to cognitive parameters $\{\Delta S_{base}, \Delta \lambda, \Delta \theta_{cluster}\}$.
-    \item \textbf{Reward} $r_t$: Implicit user engagement signals, defined as:
-    \begin{equation}
-        r_t = \alpha_1 \cdot \mathbb{1}[\text{positive feedback}] + \alpha_2 \cdot \text{followup\_depth} - \alpha_3 \cdot \text{correction\_turns}
-    \end{equation}
-\end{itemize}
-
-Instead of expensive deep RL, we employ \textbf{Gaussian Process-based Bayesian Optimization} (GP-BO) to efficiently explore the parameter space. The meta-learner maintains a posterior distribution over optimal parameters $\phi^*$ for each user:
+A key limitation of existing systems is their use of static, one-size-fits-all parameters. We frame memory management as a sequential decision problem in which the system observes user-interaction signals at each turn $t$ and periodically updates the cognitive parameter vector $\phi = \{\lambda, \tau_{\text{base}}, \theta_{\text{cluster}}\}$ for that user. The signal we track is a scalar reward:
 \begin{equation}
-    P(\phi^* | \mathcal{D}_{1:t}) \propto P(r_{1:t} | \phi_{1:t}) \cdot P(\phi^*)
+    r_t = \alpha_1 \cdot \mathbb{1}[\text{positive feedback}] + \alpha_2 \cdot \text{followup\_depth} - \alpha_3 \cdot \text{correction\_turns}.
 \end{equation}
-where $\mathcal{D}_{1:t}$ is the history of parameter-reward pairs. To mitigate cold-start issues, we initialize new users with \textit{population priors} derived from offline clustering of similar user profiles (e.g., ``forgetful'', ``nostalgic'', ``business-efficient'').
 
-The acquisition function uses Expected Improvement (EI) to balance exploration and exploitation:
+Rather than invoking a full Bayesian Optimization loop \textemdash\ which would require a Gaussian-Process surrogate fitted on a per-user basis (cf.\ scikit-optimize, BoTorch) and is disproportionate to the amount of interaction data available from a single user in the evaluation window we consider \textemdash\ we use a simple \textbf{top-$k$ weighted-averaging heuristic} as the adaptive tuner. Given the history $\mathcal{D}_{1:t} = \{(\phi_i, r_i)\}_{i=1}^{t}$ for a user, we select the $k$ observations with the highest reward and form the next parameter estimate as their reward-weighted mean, clipped to pre-declared per-dimension bounds:
 \begin{equation}
-    \phi_{t+1} = \arg\max_\phi \mathbb{E}\left[\max(0, r(\phi) - r(\phi^+))\right]
+    \phi_{t+1} \;=\; \Pi_{\mathcal{B}}\!\left(\frac{\sum_{i \in \mathrm{TopK}_k(r)} r_i \cdot \phi_i}{\sum_{i \in \mathrm{TopK}_k(r)} r_i}\right),
 \end{equation}
-where $\phi^+$ is the best parameter configuration observed so far.
+where $\Pi_{\mathcal{B}}$ projects onto the box $\mathcal{B}$ of admissible parameter ranges and $k = \min(5, |\mathcal{D}_{1:t}|)$ in our experiments. For the first $n_0$ observations we sample $\phi$ uniformly from $\mathcal{B}$ to seed the history. This is not a Gaussian Process and we make no acquisition-function claim; the heuristic is chosen for its constant per-turn cost, its lack of extra dependencies, and the fact that it degrades gracefully when the per-user sample size is small. Replacing it with a proper GP-BO step with Expected Improvement is a drop-in future extension and is left as future work.
+
+To mitigate cold-start issues, we initialize new users with \textit{population priors} recorded in the source release as the default parameter values $(\lambda = 1, \tau_{\text{base}} = 100)$. User clustering into coarse profile groups (e.g.\ ``forgetful'', ``nostalgic'', ``business-efficient'') is supported by the configuration but is disabled for all experiments in this paper and is also left as future work.
