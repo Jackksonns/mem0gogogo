@@ -3,7 +3,6 @@ Configuration for Sleep Consolidation Engine
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass

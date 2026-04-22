@@ -11,8 +11,8 @@ parameters based on observed retention performance.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from mem0_cognitive.meta_learner.configs import MetaLearnerConfig
 

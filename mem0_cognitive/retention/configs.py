@@ -3,7 +3,6 @@ Configuration for Affective Retention Scoring
 """
 
 from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass

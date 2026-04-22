@@ -17,8 +17,8 @@ salience, enabling "salience-aware memory pruning without catastrophic forgettin
 
 import logging
 import math
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Dict, Optional
 
 from mem0_cognitive.retention.configs import RetentionConfig
 

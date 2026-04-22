@@ -4,8 +4,7 @@ Utility helper functions for Mem0-Cognitive
 Convenience functions that wrap the core modules for easy integration.
 """
 
-from typing import Dict, Any, Optional, Tuple
-from datetime import datetime
+from typing import Any, Dict
 
 
 def extract_emotion(utterance: str, 
@@ -68,8 +67,8 @@ def compute_retention_score(elapsed_turns: int,
         >>> print(f"Score: {score:.3f}")
         Score: 0.923
     """
-    from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
     from mem0_cognitive.retention.configs import RetentionConfig
+    from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
     
     config = RetentionConfig(
         lambda_value=lambda_value,
@@ -100,8 +99,8 @@ async def run_consolidation_cycle(memory_store,
         >>> stats = await run_consolidation_cycle(store)
         >>> print(f"Pruned {stats['pruned']} memories")
     """
-    from mem0_cognitive.consolidation.engine import SleepConsolidator
     from mem0_cognitive.consolidation.configs import ConsolidationConfig
+    from mem0_cognitive.consolidation.engine import SleepConsolidator
     
     config = ConsolidationConfig(
         clustering_threshold=clustering_threshold,
@@ -132,8 +131,8 @@ def get_decay_curve_data(max_turns: int = 500,
         >>> curves = get_decay_curve_data(emotion_levels=[0.0, 0.5, 1.0])
         >>> # Plot using matplotlib: plt.plot(curves['E=0.0']), etc.
     """
-    from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
     from mem0_cognitive.retention.configs import RetentionConfig
+    from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
     
     config = RetentionConfig(lambda_value=lambda_value)
     scorer = AffectiveRetentionScorer(config)

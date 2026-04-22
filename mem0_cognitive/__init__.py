@@ -1,22 +1,24 @@
 """
-Mem0-Cognitive: Biologically-Inspired Memory Enhancement Module
+Mem0-Cognitive: Research extension of Mem0 with cognitive memory mechanisms.
 
-This module extends the official Mem0 project with cognitive psychology mechanisms
-for ACL 2026 submission. It provides emotion-aware memory management, sleep
-consolidation, and meta-cognitive learning capabilities.
+This subpackage extends the Mem0 project (https://github.com/mem0ai/mem0) with
+three research prototype modules:
 
-Author: Hongyi Zhou
-Affiliation: [Your University/Institution]
-Paper: ACL 2026 Submission
+    - Emotion-weighted retention scoring (affective Ebbinghaus decay)
+    - Offline sleep-style consolidation of clustered memories
+    - Adaptive heuristic tuning of per-user retention parameters
+
+Intended use: academic / research experimentation only. For production memory,
+use the underlying ``mem0`` package directly.
 """
 
-from mem0_cognitive.emotion.analyzer import EmotionAnalyzer
-from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
 from mem0_cognitive.consolidation.engine import SleepConsolidator
+from mem0_cognitive.emotion.analyzer import EmotionAnalyzer
 from mem0_cognitive.meta_learner.optimizer import MetaCognitiveOptimizer
+from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
 from mem0_cognitive.utils.helpers import (
-    extract_emotion,
     compute_retention_score,
+    extract_emotion,
     run_consolidation_cycle,
 )
 

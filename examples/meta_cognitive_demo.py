@@ -9,10 +9,10 @@ Author: Hongyi Zhou
 """
 
 import os
+import random
 import sys
 import time
-from typing import Dict, Any
-import random
+from typing import Dict
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -187,7 +187,7 @@ def run_meta_cognitive_demo():
     user_state = memory.meta_learner.get_user_state(user_id)
     
     print(f"   🎯 Optimal Decay Factor (S): {final_S:.2f}")
-    print(f"   📊 Learned Importance Weights:")
+    print("   📊 Learned Importance Weights:")
     for key, value in final_weights.items():
         bar = "█" * int(value * 20)
         print(f"      {key:10s}: {value:.3f} {bar}")
