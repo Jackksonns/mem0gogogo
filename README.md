@@ -107,7 +107,7 @@ The manuscript commits to two evaluation tracks: a synthetic **CognitiveBench** 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Theoretical Foundation:** Our approach reframes memory management as an **active inference problem** (Friston et al., 2017), where the meta-cognitive learner continuously updates a generative model of user relevance to minimize future prediction error.
+**Positioning:** The framework is **mechanism-level**, not architecture-level — three independently-ablatable modules (retention law, asynchronous consolidation, top-$k$-weighted parameter tuner) with a single configuration flag each. Earlier drafts of this README positioned the system as an instance of **active inference** (Friston et al., 2017); that positioning has been retired, since the implementation does not contain belief updates, a generative model of user relevance, or an explicit prediction-error signal. See `paper/sections/methodology.tex` for the mechanism-level formulation and `paper/sections/conclusion.tex` for the corresponding limitations.
 
 ---
 
@@ -284,10 +284,11 @@ If you use this research prototype in your work, please cite both the original M
 }
 ```
 
-**Theoretical Foundations:**
-- Friston, K. et al. (2017). "Active inference: A process theory." *Neural Computation*
-- Ebbinghaus, H. (1885). *Memory: A Contribution to Experimental Psychology*
-- McClelland, J. L., et al. (1995). "Complementary learning systems in hippocampus and neocortex." *Psychological Review*
+**Background reading (loose inspirations, not implemented claims):**
+- Ebbinghaus, H. (1885). *Memory: A Contribution to Experimental Psychology* — the exponential retention curve that Eq.\ \ref{eq:retention} in `paper/sections/methodology.tex` generalises.
+- McClelland, J. L., et al. (1995). "Complementary learning systems in hippocampus and neocortex." *Psychological Review* — motivation for running consolidation asynchronously rather than online.
+
+Note: an earlier revision of this section cited Friston et al.\ (2017), *Active Inference: A Process Theory*, as a theoretical foundation. That framing has been retired because the implementation does not contain belief updates, a generative model, or an explicit prediction-error signal. See the `Positioning` paragraph above and the Limitations section in `paper/sections/conclusion.tex`.
 
 ---
 
@@ -295,11 +296,11 @@ If you use this research prototype in your work, please cite both the original M
 
 **For production features:** Please contribute to the [official Mem0 repository](https://github.com/mem0ai/mem0).
 
-**For research collaboration:** We welcome academic contributions! Please:
-1. Fork this repository
-2. Create a branch named `feature/[your-feature-name]`
-3. Include experimental results showing impact on LoCoMo/LongMemEval benchmarks
-4. Submit a pull request with a clear description of the cognitive mechanism
+**For research collaboration:** We welcome academic contributions. Please:
+1. Fork this repository.
+2. Create a branch named `feature/[your-feature-name]`.
+3. If your change affects retention, consolidation, or the adaptive parameter tuner, add or update the corresponding unit tests in `tests/cognitive/`. Empirical results on `evaluation_cognitive/` should be reported against the configs in `evaluation_cognitive/configs/` once the runner is implemented; until then, please do not append claim numbers to the paper's tables.
+4. Submit a pull request with a clear description of the mechanism-level change and the affected rows in `paper/README.md`'s Section Status table.
 
 ---
 
