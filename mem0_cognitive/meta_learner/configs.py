@@ -1,64 +1,117 @@
-"""
-Configuration for Meta-Cognitive Learner
+"""Configuration dataclass for :class:`MetaCognitiveOptimizer`.
+
+The meta-learner implemented in
+:mod:`mem0_cognitive.meta_learner.optimizer` is **not** a Gaussian-Process
+Bayesian Optimizer. It is a top-$k$ reward-weighted averaging heuristic
+over per-user (parameter, performance) observations. This config
+documents the knobs that actually influence the heuristic.
+
+An earlier revision declared an ``acquisition_function`` field and
+advertised EI / UCB / POI choices. Those values were never read by the
+implementation. The field is retained here for backward compatibility
+with existing configuration files but only the top-$k$ strategy is
+supported; any other value raises ``ValueError`` at construction time.
 """
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Any, Dict, Optional
+
+_DEFAULT_INITIAL_PARAMS: Dict[str, float] = {
+    "lambda_value": 1.0,
+    "tau_base": 100.0,
+    "tau_salience": 50.0,
+}
+
+_DEFAULT_PARAM_BOUNDS: Dict[str, Any] = {
+    "lambda_value": (0.0, 2.0),
+    "tau_base": (50.0, 200.0),
+    "tau_salience": (25.0, 100.0),
+}
 
 
 @dataclass
 class MetaLearnerConfig:
-    """
-    Configuration parameters for meta-cognitive learning.
-    
-    As described in paper Section 3.4, the meta-cognitive learner uses Bayesian
-    optimization to learn personalized memory parameters (λ, τ_salience, etc.)
-    for each user or domain, adapting to individual "memory fingerprints".
-    
+    """Parameters for :class:`MetaCognitiveOptimizer`.
+
     Attributes:
-        enable_meta_learning: Whether to run meta-cognitive optimization
-        optimization_interval_turns: Number of dialogue turns between optimizations
-        initial_params: Initial parameter values for new users
-            - lambda_value: Emotional inertia coefficient λ ∈ [0, 2]
-            - tau_base: Base time constant τ_base
-            - tau_salience: Salience-modulated time constant τ_salience
-        param_bounds: Search space bounds for Bayesian optimization
-        acquisition_function: Acquisition function for Bayesian optimization
-            - 'ei': Expected Improvement
-            - 'ucb': Upper Confidence Bound
-            - 'poi': Probability of Improvement
-        n_initial_samples: Number of random samples before Bayesian optimization
-        maximize_metric: Metric to optimize ('retention_rate', 'accuracy', 'f1')
+        enable_meta_learning: Whether to run the adaptive tuner at all.
+            When ``False`` callers should skip calling
+            ``optimize_for_user``.
+        optimization_interval_turns: Number of dialogue turns between
+            successive calls to the tuner. Informational; not enforced
+            inside the optimizer itself.
+        initial_params: Population prior used for new users. Defaults to
+            ``lambda_value=1.0, tau_base=100.0, tau_salience=50.0``.
+        param_bounds: Per-dimension search bounds used (a) to generate
+            random exploration samples during the warm-up period and
+            (b) to clip the top-$k$ weighted-averaging update onto a
+            legal box.
+        update_strategy: Which update strategy the optimizer runs once
+            the warm-up phase ends. The only currently supported value
+            is ``'topk_weighted_mean'`` (paper Section 3.4, Eq. 6).
+        top_k: ``k`` for the top-$k$ reward-weighted-averaging step. The
+            paper reports ``k = 5``.
+        n_initial_samples: Number of random-exploration observations
+            before the top-$k$ step is first invoked.
+        maximize_metric: Human-readable tag for the optimized scalar
+            (``'retention_rate'``, ``'accuracy'``, etc.); not consumed
+            by the update rule.
+        acquisition_function: **Deprecated**; only ``'topk_weighted_mean'``
+            (equivalently ``'ei'`` for backward compat) is accepted.
+            The previous GP-BO / Expected Improvement framing is
+            retracted and deferred to future work.
+        cluster_users: Informational toggle for a (disabled) user
+            clustering step.
+        min_user_history_for_optimization: Lower bound on dialogue-turn
+            history before the tuner is allowed to run; a policy check,
+            not used inside the optimizer.
     """
+
     enable_meta_learning: bool = True
     optimization_interval_turns: int = 100
-    initial_params: Dict[str, float] = None
-    param_bounds: Dict[str, tuple] = None
-    acquisition_function: str = 'ei'
+    initial_params: Optional[Dict[str, float]] = None
+    param_bounds: Optional[Dict[str, Any]] = None
+    update_strategy: str = "topk_weighted_mean"
+    top_k: int = 5
     n_initial_samples: int = 5
-    maximize_metric: str = 'retention_rate'
-    
-    # User modeling
-    cluster_users: bool = False  # Cluster users by behavior patterns
-    min_user_history_for_optimization: int = 50  # Minimum turns before optimizing
-    
+    maximize_metric: str = "retention_rate"
+
+    # Back-compat alias: historically stored in "acquisition_function" and
+    # advertised as 'ei'/'ucb'/'poi'. Only 'topk_weighted_mean' and the
+    # legacy 'ei' label are accepted so that old configs do not crash.
+    acquisition_function: str = "topk_weighted_mean"
+
+    cluster_users: bool = False
+    min_user_history_for_optimization: int = 50
+
     def __post_init__(self):
         if self.initial_params is None:
-            self.initial_params = {
-                'lambda_value': 1.0,
-                'tau_base': 100.0,
-                'tau_salience': 50.0
-            }
-        
+            self.initial_params = dict(_DEFAULT_INITIAL_PARAMS)
         if self.param_bounds is None:
-            self.param_bounds = {
-                'lambda_value': (0.0, 2.0),
-                'tau_base': (50.0, 200.0),
-                'tau_salience': (25.0, 100.0)
-            }
-        
-        if self.acquisition_function not in ['ei', 'ucb', 'poi']:
+            self.param_bounds = dict(_DEFAULT_PARAM_BOUNDS)
+
+        # Normalize legacy 'ei' / 'EI' to the new tag so callers that
+        # wrote old configs continue to work.
+        normalized = self.acquisition_function.lower()
+        if normalized in {"ei", "topk_weighted_mean"}:
+            self.acquisition_function = "topk_weighted_mean"
+        else:
             raise ValueError(
-                f"Invalid acquisition function: {self.acquisition_function}. "
-                "Must be 'ei', 'ucb', or 'poi'"
+                "MetaLearnerConfig.acquisition_function must be "
+                "'topk_weighted_mean' (or the legacy alias 'ei'); "
+                "Gaussian-Process Bayesian Optimization with EI / UCB / POI "
+                "is not currently implemented and was retracted from the "
+                "paper. See mem0_cognitive/meta_learner/optimizer.py."
             )
+
+        if self.update_strategy != "topk_weighted_mean":
+            raise ValueError(
+                "MetaLearnerConfig.update_strategy must be "
+                "'topk_weighted_mean'; no other strategy is currently "
+                "implemented."
+            )
+
+        if self.top_k <= 0:
+            raise ValueError("top_k must be a positive integer")
+        if self.n_initial_samples < 1:
+            raise ValueError("n_initial_samples must be >= 1")

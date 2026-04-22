@@ -106,7 +106,7 @@ The manuscript's main result table is over our synthetic CognitiveBench simulato
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Meta-Cognitive Learner (Bayesian Optimization)             │
+│  Meta-Cognitive Learner (adaptive top-k heuristic)          │
 │  └─> Learns optimal λ, τ_salience per user/domain           │
 └─────────────────────┬───────────────────────────────────────┘
                       │
@@ -248,10 +248,12 @@ optimal_params = optimizer.optimize_for_user(
     dialogue_history=conversation_turns,
     performance_metric=0.85,
 )
-# The current implementation performs top-k weighted averaging over observed
-# (params, reward) history. Earlier drafts described it as GP-based Bayesian
-# Optimization; this is NOT what the code does, and the manuscript will be
-# updated to match the implementation.
+# The current implementation performs top-k reward-weighted averaging over
+# observed (params, performance) history, with uniform random exploration
+# for the first `n_initial_samples` observations. Earlier drafts described
+# this as Gaussian-Process Bayesian Optimization with Expected Improvement;
+# that claim has been retracted and paper/sections/methodology.tex now
+# describes the heuristic that is actually implemented.
 
 ---
 
