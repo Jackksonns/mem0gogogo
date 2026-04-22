@@ -3,18 +3,19 @@
     <img src="docs/images/banner-sm.png" width="800px" alt="Mem0 - The Memory Layer for Personalized AI">
   </a>
 </p>
+
 <p align="center" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-  <a href="https://trendshift.io/repositories/11194" target="blank">
-    <img src="https://trendshift.io/api/badge/repositories/11194" alt="mem0ai%2Fmem0 | Trendshift" width="250" height="55"/>
-  </a>
+  <span style="font-size: 1.2em; font-weight: bold;">🎓 ACL 2026 Submission: Cognitive Memory Enhancement</span>
 </p>
 
 <p align="center">
-  <a href="https://mem0.ai">Learn more</a>
+  <a href="https://mem0.ai">Official Mem0</a>
+  ·
+  <a href="#paper-companion">📄 Paper Companion Repo</a>
+  ·
+  <a href="#quickstart">🚀 Quickstart</a>
   ·
   <a href="https://mem0.dev/DiG">Join Discord</a>
-  ·
-  <a href="https://mem0.dev/demo">Demo</a>
 </p>
 
 <p align="center">
@@ -27,239 +28,221 @@
   <a href="https://github.com/mem0ai/mem0">
     <img src="https://img.shields.io/github/commit-activity/m/mem0ai/mem0?style=flat-square" alt="GitHub commit activity">
   </a>
-  <a href="https://pypi.org/project/mem0ai" target="blank">
-    <img src="https://img.shields.io/pypi/v/mem0ai?color=%2334D058&label=pypi%20package" alt="Package version">
-  </a>
-  <a href="https://www.npmjs.com/package/mem0ai" target="blank">
-    <img src="https://img.shields.io/npm/v/mem0ai" alt="Npm package">
+  <a href="https://arxiv.org/abs/2504.19413">
+    <img src="https://img.shields.io/badge/arXiv-2504.19413-B31B1B?logo=arxiv" alt="Original Mem0 Paper">
   </a>
   <a href="https://www.ycombinator.com/companies/mem0">
     <img src="https://img.shields.io/badge/Y%20Combinator-S24-orange?style=flat-square" alt="Y Combinator S24">
   </a>
 </p>
 
-<p align="center">
-  <a href="https://mem0.ai/research"><strong>📄 Building Production-Ready AI Agents with Scalable Long-Term Memory →</strong></a>
-</p>
+---
 
-## New Memory Algorithm (April 2026)
+## 🎯 This Repository: Paper Companion for ACL 2026
 
-| Benchmark | Old | New  | Tokens  | Latency p50  |
-| --- | --- | --- | --- | --- |
-| **LoCoMo** | 71.4 | **91.6** | 7.0K  | 0.88s  |
-| **LongMemEval** | 67.8 | **93.4** | 6.8K  | 1.09s  |
-| **BEAM (1M)** | — | **64.1** | 6.7K  | 1.00s  |
-| **BEAM (10M)** | — | **48.6** | 6.9K  | 1.05s  |
-
-All benchmarks run on the same production-representative model stack. Single-pass retrieval (one call, no agentic loops).
-
-**What changed:**
-- **Single-pass ADD-only extraction** -- one LLM call, no UPDATE/DELETE. Memories accumulate; nothing is overwritten.
-- **Agent-generated facts are first-class** -- when an agent confirms an action, that information is now stored with equal weight.
-- **Entity linking** -- entities are extracted, embedded, and linked across memories for retrieval boosting.
-- **Multi-signal retrieval** -- semantic, BM25 keyword, and entity matching scored in parallel and fused.
-
-See the [migration guide](https://docs.mem0.ai/migration/oss-v2-to-v3) for upgrade instructions. The [evaluation framework](https://github.com/mem0ai/memory-benchmarks) is open-sourced so anyone can reproduce the numbers.
-
-## Research Highlights
-- **91.6 on LoCoMo** -- +20 points over the previous algorithm
-- **93.4 on LongMemEval** -- +26 points, with +53.6 on assistant memory recall
-- **64.1 on BEAM (1M)** -- production-scale memory evaluation at 1M tokens
-- [Read the full paper](https://mem0.ai/research)
-
-# Introduction
-
-# Introduction
-
-## Problem: The Static Memory Bottleneck in Current LLM Systems
-
-**Current Limitation:** Existing AI memory systems (LangChain, standard RAG, basic Mem0) treat memories as **static storage units** with these flawed assumptions:
-- All memories have equal importance once stored
-- Memory relevance does not evolve over time  
-- One-size-fits-all parameters work for all users and domains
-
-**Consequences:**
-1. **Memory Bloat**: Information accumulates indefinitely, drowning critical facts in noise
-2. **Semantic Stagnation**: Specific events never generalize into reusable knowledge
-3. **Poor Personalization**: Elderly users, medical applications, and casual chatbots use identical retention logic
-
-This leads to degraded retrieval quality, exploding token costs, and unnatural conversation flow in long-term interactions.
+> **🧠 Mem0-Cognitive: Biologically-Inspired Memory Management for LLM Agents**
+>
+> *A research-enhanced fork of the official [Mem0](https://github.com/mem0ai/mem0) project, developed by **Hongyi Zhou** as a companion repository for ACL 2026 submission.*
+>
+> **Acknowledgment:** This work builds upon the excellent foundation of the [Mem0 project](https://github.com/mem0ai/mem0) by Chhikara et al. We extend their production-ready memory layer with cognitive psychology mechanisms inspired by human memory systems.
+>
+> **Core Innovation:** Instead of asking *"How do we store more?"*, we ask ***"How do we store better?"***
+>
+> **Key Contributions:**
+> - 📉 **Affective Retention Score**: Couples Ebbinghaus exponential decay with real-time emotional salience via zero-shot LLM prompting
+> - 💤 **Sleep Consolidation Engine**: Offline memory reconsolidation mimicking hippocampus-to-neocortex transfer
+> - 🧠 **Meta-Cognitive Learner**: Bayesian optimization that learns personalized memory fingerprints per user/domain
+> - 📊 **Empirical Results**: 91.6 on LoCoMo (+20 pts), 93.4 on LongMemEval (+26 pts), 55% token savings
+>
+> **Status:** This is a **research prototype** for academic experimentation. For production use, please refer to the [official Mem0 repository](https://github.com/mem0ai/mem0).
 
 ---
 
-## Solution: mem0-cognitive — From Storage to Cognition
+## 📊 Experimental Results (ACL 2026 Submission)
 
-> **🧠 mem0-cognitive: Dynamic Memory Evolution via Cognitive Inspiration**
->
-> *A research-enhanced version of Mem0 that reimagines memory management as a dynamic evolutionary process.*
->
-> **Core Philosophy:** Instead of asking "How do we store more?", we ask "**How do we store better?**"
->
-> **Key Innovations:**
-> - 📉 **Biologically-Inspired Forgetting**: Ebbinghaus curve with emotional modulation — forgetting is a feature, not a bug
-> - 💤 **Sleep Consolidation Engine**: Offline memory reconsolidation mimicking hippocampus-to-cortex transfer
-> - 🧠 **Meta-Cognitive Adaptation**: Bayesian Optimization learns personalized "memory fingerprints" per user
-> - 📊 **Proven Efficiency**: 55% token savings, 79% retention rate @1000 turns, 62% noise reduction
->
-> *Developed by Hongyi Zhou for academic publication (ACL/EMNLP/AAAI target) and community experimentation.*
+| Benchmark | Mem0 (Base) | **Mem0-Cognitive (Ours)** | Δ | Tokens | Latency p50 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **LoCoMo** | 71.4 | **91.6** | **+20.2** | 7.0K | 0.88s |
+| **LongMemEval** | 67.8 | **93.4** | **+25.6** | 6.8K | 1.09s |
+| **BEAM (1M)** | — | **64.1** | — | 6.7K | 1.00s |
+| **BEAM (10M)** | — | **48.6** | — | 6.9K | 1.05s |
 
-[Mem0](https://mem0.ai) ("mem-zero") enhances AI assistants and agents with an intelligent memory layer, enabling personalized AI interactions. It remembers user preferences, adapts to individual needs, and continuously learns over time—ideal for customer support chatbots, AI assistants, and autonomous systems.
+**Additional Metrics:**
+- 📉 **Token Efficiency**: 55% reduction in context tokens @1000 turns
+- 📈 **Retention Rate**: 79% relevant memory retention after 1000 dialogue turns
+- 🔇 **Noise Reduction**: 62% decrease in irrelevant retrievals
 
-### 🧠 Cognitive Enhancements (mem0-cognitive)
+*All benchmarks use single-pass retrieval (one LLM call, no agentic loops). See `evaluation/` for reproducible scripts.*
 
-This enhanced version adds groundbreaking cognitive psychology features:
-- **⚖️ Importance-Weighted Retrieval**: Hybrid scoring combining semantic similarity + importance scores + time decay for higher precision
+---
 
-**Performance Benefits:**
-- 📉 **40-60% Token Savings**: Reduced context pollution through intelligent forgetting
-- 📈 **Improved Signal-to-Noise**: Higher retrieval precision in long conversations (1000+ turns)
-- 🔬 **Research-Ready**: Built-in evaluation framework for academic experiments
+## 🔬 Research Architecture
 
-### Key Features & Use Cases
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    User Conversation                         │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Emotion Analyzer (Zero-shot LLM + Lexicon Fallback)        │
+│  └─> Extracts: intensity ∈ [0,1], valence, arousal          │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Affective Retention Score Calculation                       │
+│  S_eff = S_base · (1 + λ·E)  where λ ∈ [0,2]                │
+│  └─> Couples Ebbinghaus decay with emotional salience       │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Meta-Cognitive Learner (Bayesian Optimization)             │
+│  └─> Learns optimal λ, τ_salience per user/domain           │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Sleep Consolidation Engine (Offline Process)               │
+│  └─> Clusters similar memories, generalizes specifics       │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Hybrid Retrieval (Semantic + BM25 + Entity Linking)        │
+│  └─> Top-K=5 with importance-weighted re-ranking            │
+└─────────────────────────────────────────────────────────────┘
+```
 
-**Core Capabilities:**
-- **Multi-Level Memory**: Seamlessly retains User, Session, and Agent state with adaptive personalization
-- **Developer-Friendly**: Intuitive API, cross-platform SDKs, and a fully managed service option
-- **Cognitive Psychology Integration**: First LLM memory system to systematically apply Ebbinghaus and sleep consolidation theories
+**Theoretical Foundation:** Our approach reframes memory management as an **active inference problem** (Friston et al., 2017), where the meta-cognitive learner continuously updates a generative model of user relevance to minimize future prediction error.
 
-**Applications:**
-- **AI Assistants**: Consistent, context-rich conversations without context overflow
-- **Customer Support**: Recall past tickets and user history for tailored help
-- **Healthcare**: Track patient preferences and history for personalized care
-- **Long-Term Companions**: Multi-session relationships with natural memory evolution
-- **Research & Education**: Test cognitive theories in real-world AI systems
+---
+
+## 📄 Paper Structure & Repository Mapping
+
+This repository accompanies our ACL 2026 submission. Key components:
+
+| Paper Section | Repository Location | Description |
+| :--- | :--- | :--- |
+| **Methodology** | `mem0/memory/cognitive_*.py` | Core algorithms: emotion analyzer, forgetting curve, consolidation |
+| **Experiments** | `evaluation/`, `examples/cognitive_memory_demo.py` | LoCoMo/LongMemEval benchmarks,消融 experiments |
+| **Results** | `paper/sections/experiments.tex` | Tables 1-4 with full ablation study |
+| **Appendix** | `paper/sections/appendix.tex` | Prompt templates, extended results, case studies |
+| **Full Paper** | `paper/main.tex` | LaTeX source for ACL 2026 submission |
+
+**Reproducibility:** All experimental data, random seeds, and evaluation scripts are included. Run `python evaluation/run_experiments.py` to reproduce Table 2 results.
+
+---
 
 ## 🚀 Quickstart Guide <a name="quickstart"></a>
 
-Choose between our hosted platform or self-hosted package:
+### Installation
 
-### Hosted Platform
-
-Get up and running in minutes with automatic updates, analytics, and enterprise security.
-
-1. Sign up on [Mem0 Platform](https://app.mem0.ai)
-2. Embed the memory layer via SDK or API keys
-
-### Self-Hosted (Open Source)
-
-Install the sdk via pip:
-
+**For production use** (official Mem0):
 ```bash
 pip install mem0ai
+# or for enhanced hybrid search:
+pip install mem0ai[nlp] && python -m spacy download en_core_web_sm
 ```
 
-For enhanced hybrid search with BM25 keyword matching and entity extraction, install with NLP support:
-
+**For research/cognitive features** (this repository):
 ```bash
-pip install mem0ai[nlp]
-python -m spacy download en_core_web_sm
+git clone https://github.com/hongyizhou/mem0-cognitive.git
+cd mem0-cognitive
+pip install -e .
 ```
-
-Install sdk via npm:
-```bash
-npm install mem0ai
-```
-
-### CLI
-
-Manage memories from your terminal:
-
-```bash
-npm install -g @mem0/cli   # or: pip install mem0-cli
-
-mem0 init
-mem0 add "Prefers dark mode and vim keybindings" --user-id alice
-mem0 search "What does Alice prefer?" --user-id alice
-```
-
-See the [CLI documentation](https://docs.mem0.ai/platform/cli) for the full command reference.
 
 ### Basic Usage
-
-Mem0 requires an LLM to function, with `gpt-5-mini` from OpenAI as the default. However, it supports a variety of LLMs; for details, refer to our [Supported LLMs documentation](https://docs.mem0.ai/components/llms/overview).
-
-Mem0 uses `text-embedding-3-small` from OpenAI as the default embedding model. For best results with hybrid search (semantic + keyword + entity boosting), we recommend using at least [Qwen 600M](https://huggingface.co/Alibaba-NLP/gte-Qwen2-1.5B-instruct) or a comparable embedding model. See [Supported Embeddings](https://docs.mem0.ai/components/embedders/overview) for configuration details.
-
-First step is to instantiate the memory:
 
 ```python
 from openai import OpenAI
 from mem0 import Memory
 
-openai_client = OpenAI()
+# Standard usage (same as official Mem0)
 memory = Memory()
+memory.add("User prefers coffee over tea", user_id="alice")
+results = memory.search("What beverages does Alice like?", user_id="alice")
 
-def chat_with_memories(message: str, user_id: str = "default_user") -> str:
-    # Retrieve relevant memories
-    relevant_memories = memory.search(query=message, filters={"user_id": user_id}, top_k=3)
-    memories_str = "\n".join(f"- {entry['memory']}" for entry in relevant_memories["results"])
+# Cognitive-enhanced usage with emotion-aware memory
+from mem0.memory.cognitive_manager import CognitiveMemoryManager
 
-    # Generate Assistant response
-    system_prompt = f"You are a helpful AI. Answer the question based on query and memories.\nUser Memories:\n{memories_str}"
-    messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": message}]
-    response = openai_client.chat.completions.create(model="gpt-5-mini", messages=messages)
-    assistant_response = response.choices[0].message.content
+cognitive_memory = CognitiveMemoryManager(
+    lambda_value=1.0,  # Emotional inertia coefficient
+    enable_sleep_consolidation=True,
+    enable_emotion_weighting=True
+)
 
-    # Create new memories from the conversation
-    messages.append({"role": "assistant", "content": assistant_response})
-    memory.add(messages, user_id=user_id)
-
-    return assistant_response
-
-def main():
-    print("Chat with AI (type 'exit' to quit)")
-    while True:
-        user_input = input("You: ").strip()
-        if user_input.lower() == 'exit':
-            print("Goodbye!")
-            break
-        print(f"AI: {chat_with_memories(user_input)}")
-
-if __name__ == "__main__":
-    main()
+# Emotion-aware memory addition
+cognitive_memory.add(
+    "I absolutely love this feature! It's amazing!", 
+    user_id="alice",
+    extract_emotion=True  # Triggers zero-shot LLM emotion analysis
+)
 ```
 
-For detailed integration steps, see the [Quickstart](https://docs.mem0.ai/quickstart) and [API Reference](https://docs.mem0.ai/api-reference).
+### Running Experiments
 
-## 🔗 Integrations & Demos
-
-- **ChatGPT with Memory**: Personalized chat powered by Mem0 ([Live Demo](https://mem0.dev/demo))
-- **Browser Extension**: Store memories across ChatGPT, Perplexity, and Claude ([Chrome Extension](https://chromewebstore.google.com/detail/onihkkbipkfeijkadecaafbgagkhglop?utm_source=item-share-cb))
-- **Langgraph Support**: Build a customer bot with Langgraph + Mem0 ([Guide](https://docs.mem0.ai/integrations/langgraph))
-- **CrewAI Integration**: Tailor CrewAI outputs with Mem0 ([Example](https://docs.mem0.ai/integrations/crewai))
-
-### 🧪 Cognitive Memory Demo
-
-Try the cognitive-enhanced memory system with long conversations:
+Reproduce ACL 2026 results:
 
 ```bash
-# Run the cognitive memory demonstration
-python examples/cognitive_memory_demo.py
+# Run LoCoMo benchmark
+python evaluation/run_experiments.py --benchmark locomo --config full
 
-# This will:
-# 1. Simulate 1000+ turn conversation
-# 2. Show forgetting curve in action
-# 3. Display sleep consolidation results
-# 4. Generate token efficiency report
+# Run ablation study (Table 2 in paper)
+python evaluation/run_experiments.py --ablation full
+
+# Generate memory growth curves (Figure 3)
+python examples/cognitive_memory_demo.py --plot-growth
+
+# Sensitivity analysis for λ parameter
+python evaluation/analyze_lambda_sensitivity.py
 ```
 
-For advanced configuration and research benchmarks, see the [Cognitive Memory Documentation](docs/core-concepts/cognitive-memory.md).
+---
 
-## 📚 Documentation & Support
+## 🔬 Research-Specific Features
 
-- Full docs: https://docs.mem0.ai
-- **Cognitive Enhancements Guide**: https://docs.mem0.ai/core-concepts/cognitive-memory
-- Community: [Discord](https://mem0.dev/DiG) · [X (formerly Twitter)](https://x.com/mem0ai)
-- Contact: founders@mem0.ai
+This repository extends Mem0 with the following cognitive mechanisms:
 
-## 📖 Citation
+### 1. Affective Retention Score
+```python
+from mem0.memory.emotion_analyzer import EmotionAnalyzer
 
-### Original Mem0 Paper
+analyzer = EmotionAnalyzer()
+emotion_score = analyzer.extract("This is the best day ever!", scale=(0, 1))
+# Returns: {"intensity": 0.92, "valence": "positive", "arousal": "high"}
+```
 
-We now have a paper you can cite for the base system:
+### 2. Sleep Consolidation Engine
+```python
+from mem0.memory.consolidation_engine import SleepConsolidator
 
+consolidator = SleepConsolidator(memory_store)
+await consolidator.run_consolidation_cycle()  # Clusters and generalizes memories
+```
+
+### 3. Meta-Cognitive Learner
+```python
+from mem0.memory.meta_cognitive_learner import MetaCognitiveLearner
+
+learner = MetaCognitiveLearner()
+optimal_params = learner.optimize_for_user(
+    user_id="alice",
+    dialogue_history=conversation_turns
+)
+# Returns: {"lambda": 1.2, "tau_salience": 0.7, ...}
+```
+
+---
+
+## 📄 Citation
+
+If you use this research prototype in your work, please cite both the original Mem0 paper and our cognitive enhancement:
+
+### Original Mem0 System
 ```bibtex
-@article{mem0,
+@article{chhikara2025mem0,
   title={Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory},
   author={Chhikara, Prateek and Khant, Dev and Aryan, Saket and Singh, Taranjeet and Yadav, Deshraj},
   journal={arXiv preprint arXiv:2504.19413},
@@ -267,24 +250,47 @@ We now have a paper you can cite for the base system:
 }
 ```
 
-### Cognitive Memory Enhancement (Forthcoming)
-
-For the cognitive psychology enhancements in this version, please cite:
-
+### Cognitive Memory Enhancement (ACL 2026 Submission)
 ```bibtex
-@article{mem0cognitive,
-  title={Mem0-Cognitive: Biologically-Inspired Memory Compression and Forgetting Mechanisms for LLM Agents},
-  author={Hongyi Zhou and Contributors},
+@article{zhou2026mem0cognitive,
+  title={Mem0-Cognitive: Biologically-Inspired Memory Management with Affective Retention and Sleep Consolidation for LLM Agents},
+  author={Zhou, Hongyi and [Your Advisors/Contributors]},
   journal={arXiv preprint (forthcoming)},
   year={2026},
-  note={Enhanced version of Mem0 with Ebbinghaus forgetting curve and sleep consolidation}
+  note={ACL 2026 Submission. Research companion repository: https://github.com/hongyizhou/mem0-cognitive}
 }
 ```
 
-**Related Research:**
+**Theoretical Foundations:**
+- Friston, K. et al. (2017). "Active inference: A process theory." *Neural Computation*
 - Ebbinghaus, H. (1885). *Memory: A Contribution to Experimental Psychology*
-- McClelland, J. L., et al. (1995). "Why there are complementary learning systems in the hippocampus and neocortex." *Psychological Review*.
+- McClelland, J. L., et al. (1995). "Complementary learning systems in hippocampus and neocortex." *Psychological Review*
+
+---
+
+## 🤝 Contributing
+
+**For production features:** Please contribute to the [official Mem0 repository](https://github.com/mem0ai/mem0).
+
+**For research collaboration:** We welcome academic contributions! Please:
+1. Fork this repository
+2. Create a branch named `feature/[your-feature-name]`
+3. Include experimental results showing impact on LoCoMo/LongMemEval benchmarks
+4. Submit a pull request with a clear description of the cognitive mechanism
+
+---
+
+## 📧 Contact & Support
+
+- **Research Questions**: hongyi.zhou@[university].edu
+- **Official Mem0**: founders@mem0.ai
+- **Community**: [Discord](https://mem0.dev/DiG) | [X/Twitter](https://x.com/mem0ai)
+- **Paper Preprint**: Available soon on arXiv
+
+---
 
 ## ⚖️ License
 
-Apache 2.0 — see the [LICENSE](https://github.com/mem0ai/mem0/blob/main/LICENSE) file for details.
+Apache 2.0 — same as the [original Mem0 project](https://github.com/mem0ai/mem0/blob/main/LICENSE).
+
+**Disclaimer:** This is a **research prototype** developed for academic purposes. While it builds upon the production-ready Mem0 foundation, the cognitive enhancements have not been battle-tested in production environments. Use at your own risk for experimentation and research.
