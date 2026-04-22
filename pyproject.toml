@@ -21,6 +21,7 @@ dependencies = [
     "pytz>=2024.1",
     "sqlalchemy>=2.0.31",
     "protobuf>=5.29.6,<7.0.0",
+    "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
@@ -89,15 +90,17 @@ pythonpath = ["."]
 [tool.hatch.build]
 include = [
     "mem0/**/*.py",
+    "mem0_cognitive/**/*.py",
 ]
 exclude = [
     "**/*",
     "!mem0/**/*.py",
+    "!mem0_cognitive/**/*.py",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["mem0"]
-only-include = ["mem0"]
+packages = ["mem0", "mem0_cognitive"]
+only-include = ["mem0", "mem0_cognitive"]
 
 [tool.hatch.envs.dev_py_3_10]
 python = "3.10"
@@ -148,8 +151,8 @@ line-length = 120
 exclude = ["embedchain/", "openmemory/"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["mem0", "mem0_cli"]
+known-first-party = ["mem0", "mem0_cognitive", "mem0_cli"]
 
 [tool.isort]
 profile = "black"
-known_first_party = ["mem0", "mem0_cli"]
+known_first_party = ["mem0", "mem0_cognitive", "mem0_cli"]

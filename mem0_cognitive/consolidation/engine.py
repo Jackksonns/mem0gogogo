@@ -16,9 +16,9 @@ preserving long-term relevant information.
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Tuple
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from mem0_cognitive.consolidation.configs import ConsolidationConfig
 
@@ -268,11 +268,12 @@ class SleepConsolidator:
             return {'merged': len(cluster_memories) - 1}
         
         elif strategy == 'average':
-            # Average embeddings and concatenate content
-            # (Simplified implementation)
-            consolidated_content = " | ".join([m['content'] for m in cluster_memories])
-            # Update first memory, delete rest
-            # ... (implementation omitted for brevity)
+            # TODO(stage-3): implement averaged-embedding consolidation end to
+            # end. The current body is intentionally a stub \u2014 it computes the
+            # naive concatenated content (prefixed with `_` to silence F841)
+            # but does not yet write it back to the store or delete the
+            # redundant cluster members.
+            _consolidated_content = " | ".join(m['content'] for m in cluster_memories)
             return {'merged': len(cluster_memories) - 1}
         
         elif strategy == 'summarize':

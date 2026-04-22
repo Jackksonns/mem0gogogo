@@ -202,12 +202,12 @@ User Utterance
 If you use this code in your research:
 
 ```bibtex
-@article{zhou2026mem0cognitive,
-  title={Mem0-Cognitive: Biologically-Inspired Memory Management with Affective Retention and Sleep Consolidation for LLM Agents},
-  author={Zhou, Hongyi},
-  journal={arXiv preprint (forthcoming)},
+@article{mem0cognitive2026,
+  title={Mem0-Cognitive: Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory},
+  author={Anonymous},
+  journal={Under review},
   year={2026},
-  note={ACL 2026 Submission}
+  note={ACL 2026 submission}
 }
 ```
 

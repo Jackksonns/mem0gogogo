@@ -63,7 +63,7 @@ mem0_cognitive/
 
 ## Paper Reference
 
-Zhou, Hongyi. "Mem0-Cognitive: Biologically-Inspired Memory Management with Affective Retention and Sleep Consolidation for LLM Agents." ACL 2026 Submission.
+"Mem0-Cognitive: Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory." ACL 2026 submission. Title is kept in sync with the root `README.md`, `paper/README.md`, and `paper/main.tex`.
 
 ## License
 

@@ -40,39 +40,47 @@
 
 ## 🎯 This Repository: Paper Companion for ACL 2026
 
-> **🧠 Mem0-Cognitive: Biologically-Inspired Memory Management for LLM Agents**
+> **Mem0-Cognitive: Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory**
 >
-> *A research-enhanced fork of the official [Mem0](https://github.com/mem0ai/mem0) project, developed by **Hongyi Zhou** as a companion repository for ACL 2026 submission.*
+> *A research-oriented fork of the official [Mem0](https://github.com/mem0ai/mem0) project, prepared as a companion repository for an ACL 2026 submission.*
 >
-> **Acknowledgment:** This work builds upon the excellent foundation of the [Mem0 project](https://github.com/mem0ai/mem0) by Chhikara et al. We extend their production-ready memory layer with cognitive psychology mechanisms inspired by human memory systems.
+> **Acknowledgment:** This work builds on the [Mem0 project](https://github.com/mem0ai/mem0) by Chhikara et al. The cognitive extensions live in a separate Python package, `mem0_cognitive`, so the upstream `mem0` runtime is unchanged.
 >
-> **Core Innovation:** Instead of asking *"How do we store more?"*, we ask ***"How do we store better?"***
+> **What this repo adds on top of Mem0 (research prototype):**
+> - **Affective Retention Score** — an emotion-modulated form of the Ebbinghaus decay curve, computed from zero-shot LLM emotion extraction.
+> - **Sleep Consolidation Engine** — offline clustering + LLM-based abstraction of redundant episodic memories into consolidated entries.
+> - **Adaptive Parameter Tuning** — lightweight heuristic (top-k weighted averaging over observed performance) that adjusts per-user retention parameters; an earlier draft framed this as Bayesian Optimization but the implementation is a heuristic surrogate, not a Gaussian Process. See `paper/sections/methodology.tex` for the current honest formulation.
 >
-> **Key Contributions:**
-> - 📉 **Affective Retention Score**: Couples Ebbinghaus exponential decay with real-time emotional salience via zero-shot LLM prompting
-> - 💤 **Sleep Consolidation Engine**: Offline memory reconsolidation mimicking hippocampus-to-neocortex transfer
-> - 🧠 **Meta-Cognitive Learner**: Bayesian optimization that learns personalized memory fingerprints per user/domain
-> - 📊 **Empirical Results**: 91.6 on LoCoMo (+20 pts), 93.4 on LongMemEval (+26 pts), 55% token savings
->
-> **Status:** This is a **research prototype** for academic experimentation. For production use, please refer to the [official Mem0 repository](https://github.com/mem0ai/mem0).
+> **Status:** Research prototype. Numbers reported in this README are those reproduced from the experiments described in `paper/sections/experiments.tex` (LoCoMo + CognitiveBench). Earlier README drafts quoted LongMemEval and BEAM results that were not backed by the manuscript — those claims have been removed. For production memory, use the [official Mem0 repository](https://github.com/mem0ai/mem0).
 
 ---
 
-## 📊 Experimental Results (ACL 2026 Submission)
+## Experimental Results (numbers reproduced from `paper/sections/experiments.tex`)
 
-| Benchmark | Mem0 (Base) | **Mem0-Cognitive (Ours)** | Δ | Tokens | Latency p50 |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **LoCoMo** | 71.4 | **91.6** | **+20.2** | 7.0K | 0.88s |
-| **LongMemEval** | 67.8 | **93.4** | **+25.6** | 6.8K | 1.09s |
-| **BEAM (1M)** | — | **64.1** | — | 6.7K | 1.00s |
-| **BEAM (10M)** | — | **48.6** | — | 6.9K | 1.05s |
+The manuscript's main result table is over our synthetic CognitiveBench simulator (1000 dialogue turns, Retention@10 / Noise Ratio / token savings / latency), with a secondary accuracy table on LoCoMo. The numbers below match those tables verbatim:
 
-**Additional Metrics:**
-- 📉 **Token Efficiency**: 55% reduction in context tokens @1000 turns
-- 📈 **Retention Rate**: 79% relevant memory retention after 1000 dialogue turns
-- 🔇 **Noise Reduction**: 62% decrease in irrelevant retrievals
+**Main: CognitiveBench (1000 turns)**
 
-*All benchmarks use single-pass retrieval (one LLM call, no agentic loops). See `evaluation/` for reproducible scripts.*
+| System | Retention@10 | Noise Ratio | Token Savings | Latency (ms) |
+| :--- | :---: | :---: | :---: | :---: |
+| Vanilla RAG | 55.3% | 38.2% | — | 12 |
+| Mem0 Original | 62.1% | 31.5% | 15% | 18 |
+| Generative Agents | 58.7% | 35.8% | 22% | 245 |
+| MemGPT | 64.2% | 29.1% | 28% | 35 |
+| Zep | 61.5% | 32.4% | 20% | 25 |
+| **Mem0-Cognitive (Ours)** | **79.4%** | **12.3%** | **55%** | **48** |
+
+**Secondary: LoCoMo accuracy**
+
+| System | Accuracy |
+| :--- | :---: |
+| Vanilla RAG | 61.2 |
+| Mem0 Original | 65.8 |
+| Generative Agents | 63.4 |
+| MemGPT | 67.1 |
+| **Mem0-Cognitive (Ours)** | **72.5** |
+
+> **Reproducibility status (as of this commit):** evaluation scripts are in the middle of a rebuild (tracked in a follow-up PR). Until then, the numbers above should be treated as the manuscript's claims rather than one-click reproducible artifacts. The earlier README numbers for LongMemEval (93.4) and BEAM (64.1 / 48.6) were inconsistent with the manuscript and have been removed pending real runs.
 
 ---
 
@@ -125,13 +133,13 @@ This repository accompanies our ACL 2026 submission. Key components:
 
 | Paper Section | Repository Location | Description |
 | :--- | :--- | :--- |
-| **Methodology** | `mem0/memory/cognitive_*.py` | Core algorithms: emotion analyzer, forgetting curve, consolidation |
-| **Experiments** | `evaluation/`, `examples/cognitive_memory_demo.py` | LoCoMo/LongMemEval benchmarks,消融 experiments |
-| **Results** | `paper/sections/experiments.tex` | Tables 1-4 with full ablation study |
-| **Appendix** | `paper/sections/appendix.tex` | Prompt templates, extended results, case studies |
-| **Full Paper** | `paper/main.tex` | LaTeX source for ACL 2026 submission |
+| **Methodology** | `mem0_cognitive/{emotion,retention,consolidation,meta_learner}/` | Core algorithms: emotion analyzer, affective retention scorer, sleep consolidator, adaptive parameter tuner |
+| **System integration** | `mem0/memory/main.py`, `mem0/memory/meta_learner.py` | Points where cognitive modules are wired into the underlying Mem0 `Memory` class (retrieval-time re-ranking; emotion extraction and consolidation wiring are work-in-progress) |
+| **Results** | `paper/sections/experiments.tex` | Main result table + ablation table |
+| **Appendix** | `paper/sections/appendix.tex` | Prompt templates, CognitiveBench generation protocol, case studies |
+| **Full Paper** | `paper/main.tex` | LaTeX source |
 
-**Reproducibility:** All experimental data, random seeds, and evaluation scripts are included. Run `python evaluation/run_experiments.py` to reproduce Table 2 results.
+**Reproducibility status:** The experiment runner under `evaluation/` is still the upstream Mem0 evaluation harness (it has `--technique_type`, not the `--benchmark`/`--ablation` flags that earlier drafts of this README advertised). A dedicated `evaluation_cognitive/` directory with CognitiveBench generator, LoCoMo adapter, and ablation runner is being added in a follow-up PR; until it lands, the paper's numbers should be read as claims, not as artifacts you can regenerate with a single command.
 
 ---
 
@@ -148,10 +156,14 @@ pip install mem0ai[nlp] && python -m spacy download en_core_web_sm
 
 **For research/cognitive features** (this repository):
 ```bash
-git clone https://github.com/hongyizhou/mem0-cognitive.git
-cd mem0-cognitive
+git clone https://github.com/Jackksonns/mem0gogogo.git
+cd mem0gogogo
 pip install -e .
 ```
+
+The editable install now ships two importable Python packages:
+- `mem0` — the upstream Mem0 runtime (unchanged).
+- `mem0_cognitive` — the research extensions used by the paper.
 
 ### Basic Usage
 
@@ -164,39 +176,37 @@ memory = Memory()
 memory.add("User prefers coffee over tea", user_id="alice")
 results = memory.search("What beverages does Alice like?", user_id="alice")
 
-# Cognitive-enhanced usage with emotion-aware memory
-from mem0.memory.cognitive_manager import CognitiveMemoryManager
-
-cognitive_memory = CognitiveMemoryManager(
-    lambda_value=1.0,  # Emotional inertia coefficient
-    enable_sleep_consolidation=True,
-    enable_emotion_weighting=True
+# Research-side cognitive components (used by the paper)
+from mem0_cognitive import (
+    EmotionAnalyzer,
+    AffectiveRetentionScorer,
+    SleepConsolidator,
+    MetaCognitiveOptimizer,
 )
 
-# Emotion-aware memory addition
-cognitive_memory.add(
-    "I absolutely love this feature! It's amazing!", 
-    user_id="alice",
-    extract_emotion=True  # Triggers zero-shot LLM emotion analysis
-)
+analyzer = EmotionAnalyzer()
+emotion = analyzer.extract("I absolutely love this feature! It's amazing!")
+# -> {'intensity': float in [0,1], 'valence': ..., 'arousal': ..., 'method': 'llm'|'lexicon'}
+
+scorer = AffectiveRetentionScorer()
+score = scorer.compute(elapsed_turns=50, emotion_intensity=emotion["intensity"])
+
+# NOTE: the end-to-end wiring (automatic emotion extraction in Memory.add(),
+# background consolidation job, retention-aware re-ranking in Memory.search)
+# is still work-in-progress. The modules above are the primitives used by the
+# paper's experiments; the top-level Memory class currently only integrates
+# the adaptive parameter tuner (see mem0/memory/meta_learner.py).
 ```
 
 ### Running Experiments
 
-Reproduce ACL 2026 results:
+> **The evaluation harness is currently being rebuilt.** The `evaluation/` directory at this revision is still the upstream Mem0 evaluation code — it supports `--technique_type {mem0,rag,zep,openai,langmem}` and `--method {add,search}`, not the `--benchmark locomo` / `--ablation full` invocations referenced in earlier drafts of this README. A new `evaluation_cognitive/` directory (CognitiveBench generator + seeds, LoCoMo adapter, ablation runner, table-generation scripts) is tracked in a separate PR.
+
+What works today against the upstream harness (for reference / baseline Mem0 numbers only, not the cognitive experiments):
 
 ```bash
-# Run LoCoMo benchmark
-python evaluation/run_experiments.py --benchmark locomo --config full
-
-# Run ablation study (Table 2 in paper)
-python evaluation/run_experiments.py --ablation full
-
-# Generate memory growth curves (Figure 3)
-python examples/cognitive_memory_demo.py --plot-growth
-
-# Sensitivity analysis for λ parameter
-python evaluation/analyze_lambda_sensitivity.py
+python evaluation/run_experiments.py --technique_type mem0 --method add
+python evaluation/run_experiments.py --technique_type mem0 --method search
 ```
 
 ---
@@ -207,32 +217,41 @@ This repository extends Mem0 with the following cognitive mechanisms:
 
 ### 1. Affective Retention Score
 ```python
-from mem0.memory.emotion_analyzer import EmotionAnalyzer
+from mem0_cognitive import EmotionAnalyzer, AffectiveRetentionScorer
 
 analyzer = EmotionAnalyzer()
-emotion_score = analyzer.extract("This is the best day ever!", scale=(0, 1))
-# Returns: {"intensity": 0.92, "valence": "positive", "arousal": "high"}
+emotion = analyzer.extract("This is the best day ever!")
+# {'intensity': 0.92, 'valence': 'positive', 'arousal': 'high', 'method': 'llm'}
+
+scorer = AffectiveRetentionScorer()
+scorer.compute(elapsed_turns=50, emotion_intensity=emotion["intensity"])
 ```
 
 ### 2. Sleep Consolidation Engine
 ```python
-from mem0.memory.consolidation_engine import SleepConsolidator
+from mem0_cognitive import SleepConsolidator
 
 consolidator = SleepConsolidator(memory_store)
-await consolidator.run_consolidation_cycle()  # Clusters and generalizes memories
+stats = await consolidator.run_consolidation_cycle()
+# See paper/sections/methodology.tex §3.3 for the formal schema-induction formulation.
+# Note: the LLM-based summarization path requires an OpenAI-compatible client to
+# be configured; the `keep_best` strategy works without one.
 ```
 
-### 3. Meta-Cognitive Learner
+### 3. Adaptive Parameter Tuner
 ```python
-from mem0.memory.meta_cognitive_learner import MetaCognitiveLearner
+from mem0_cognitive import MetaCognitiveOptimizer
 
-learner = MetaCognitiveLearner()
-optimal_params = learner.optimize_for_user(
+optimizer = MetaCognitiveOptimizer()
+optimal_params = optimizer.optimize_for_user(
     user_id="alice",
-    dialogue_history=conversation_turns
+    dialogue_history=conversation_turns,
+    performance_metric=0.85,
 )
-# Returns: {"lambda": 1.2, "tau_salience": 0.7, ...}
-```
+# The current implementation performs top-k weighted averaging over observed
+# (params, reward) history. Earlier drafts described it as GP-based Bayesian
+# Optimization; this is NOT what the code does, and the manuscript will be
+# updated to match the implementation.
 
 ---
 
@@ -252,12 +271,12 @@ If you use this research prototype in your work, please cite both the original M
 
 ### Cognitive Memory Enhancement (ACL 2026 Submission)
 ```bibtex
-@article{zhou2026mem0cognitive,
-  title={Mem0-Cognitive: Biologically-Inspired Memory Management with Affective Retention and Sleep Consolidation for LLM Agents},
-  author={Zhou, Hongyi and [Your Advisors/Contributors]},
-  journal={arXiv preprint (forthcoming)},
+@article{mem0cognitive2026,
+  title={Mem0-Cognitive: Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory},
+  author={Anonymous},
+  journal={Under review},
   year={2026},
-  note={ACL 2026 Submission. Research companion repository: https://github.com/hongyizhou/mem0-cognitive}
+  note={ACL 2026 submission. Research companion repository: https://github.com/Jackksonns/mem0gogogo}
 }
 ```
 
@@ -280,12 +299,12 @@ If you use this research prototype in your work, please cite both the original M
 
 ---
 
-## 📧 Contact & Support
+## Contact & Support
 
-- **Research Questions**: hongyi.zhou@[university].edu
 - **Official Mem0**: founders@mem0.ai
 - **Community**: [Discord](https://mem0.dev/DiG) | [X/Twitter](https://x.com/mem0ai)
-- **Paper Preprint**: Available soon on arXiv
+
+(Per double-blind review policy, contact info for the cognitive extension authors is omitted until the submission exits the review cycle.)
 
 ---
 

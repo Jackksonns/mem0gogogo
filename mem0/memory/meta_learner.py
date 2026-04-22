@@ -21,9 +21,8 @@ Author: Hongyi Zhou
 """
 
 import logging
-from typing import Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
-import math
+from typing import Any, Dict, Tuple
 
 # Using a simple Gaussian Process surrogate implementation for zero-dependency
 # In production, this could be replaced by scikit-optimize or BoTorch
