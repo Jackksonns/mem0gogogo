@@ -4,10 +4,10 @@
 *.bbl
 *.blg
 *.log
-*.out
 *.toc
 *.lof
 *.lot
+*.out
 *.fls
 *.fdb_latexmk
 *.synctex.gz

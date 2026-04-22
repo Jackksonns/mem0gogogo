@@ -10,7 +10,7 @@ To bridge this gap, we introduce \textbf{Mem0-Cognitive}, a novel framework that
 \textbf{Our Contributions} are fourfold:
 \begin{enumerate}
     \item \textbf{A Cognitively-Inspired Framework}: We introduce the Mem0-Cognitive framework, which integrates emotion-weighted Ebbinghaus decay, offline schema induction via sleep consolidation, and a meta-cognitive learner for personalized parameter adaptation.
-    \item \textbf{Algorithmic Formalization}: We derive a novel \textit{Affective Retention Score} that incorporates a \textbf{Salience Gate} mechanism, enabling dynamic memory pruning without catastrophic forgetting of emotionally charged events.
+    \item \textbf{Algorithmic Formalization}: We formalize an \textit{Affective Retention Score} that couples the Ebbinghaus exponential decay with a \textbf{real-time emotional salience term} extracted via zero-shot LLM prompting, enabling salience-aware memory pruning without catastrophic forgetting.
     \item \textbf{Benchmark \& Evaluation}: We release \textbf{CognitiveBench}, a long-context dialogue simulator designed to probe memory retention vs. noise trade-offs over 1000+ turns, alongside evaluations on the LoCoMo benchmark.
     \item \textbf{Empirical Findings}: Extensive experiments demonstrate a \textbf{55\% reduction in token overhead} and a \textbf{29\% increase in critical fact retention} compared to state-of-the-art baselines, with sub-50ms inference latency overhead. Ablation studies confirm the distinct contributions of each cognitive module.
 \end{enumerate}
