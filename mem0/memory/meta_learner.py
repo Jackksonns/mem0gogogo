@@ -1,31 +1,28 @@
-"""
-Meta-Cognitive Learner for Adaptive Memory Parameters.
+"""Search-side adaptive re-weighting of memory parameters.
 
-PROBLEM: Existing memory systems use static, one-size-fits-all parameters (e.g., fixed 
-forgetting curve decay, uniform scoring weights). This fails to account for:
-- Individual differences (elderly vs. young users have different memory patterns)
-- Domain variations (medical facts need longer retention than casual chat)
-- Temporal shifts (user behavior and preferences evolve over time)
+PROBLEM: Existing memory systems use static, one-size-fits-all parameters
+(fixed forgetting-curve decay, uniform scoring weights). This fails to
+account for per-user differences in what matters.
 
-SOLUTION: We introduce a Meta-Cognitive adaptation layer that treats memory management 
-as a sequential decision problem (MDP). Using lightweight Bayesian Optimization, the 
-system continuously learns optimal parameters for each user by:
-1. Observing implicit feedback signals (follow-up questions, conversation flow)
-2. Balancing exploration (trying new parameter configurations) vs. exploitation 
-   (using known good configurations)
-3. Converging to personalized "memory fingerprints" that maximize long-term engagement
+SOLUTION: A lightweight adaptive re-weighting layer that treats per-user
+parameter tuning as a sequential black-box search. Each trial records an
+observation ``(params, reward)`` from the user's implicit feedback
+signals; the next trial is proposed by (a) random wide exploration
+during a warm-up phase and (b) small Gaussian perturbation around the
+current best once the warm-up ends.
 
-This transforms memory from a static configuration into a dynamic, self-improving system.
-
-Author: Hongyi Zhou
+This module is deliberately **not** a Gaussian Process Bayesian
+Optimizer. An earlier revision described it as "GP-BO with Expected
+Improvement"; the implemented algorithm has always been
+perturb-and-track-best, so that framing is retracted. Swapping this
+body for ``skopt.gp_minimize`` or ``botorch`` is a clean future
+extension that does not change the public API.
 """
 
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, Tuple
 
-# Using a simple Gaussian Process surrogate implementation for zero-dependency
-# In production, this could be replaced by scikit-optimize or BoTorch
 logger = logging.getLogger(__name__)
 
 
@@ -41,19 +38,26 @@ class UserMetaState:
         "emotion": 0.25,
         "base": 0.2
     })
-    # History of trials for Bayesian Optimization
-    trials: list = field(default_factory=list)  # List of {params, reward}
+    # History of (params, reward) trials for the adaptive re-weighter.
+    trials: list = field(default_factory=list)
     confidence: float = 0.0  # How confident we are in the current params (0-1)
 
 
 class MetaCognitiveLearner:
-    """
-    Adapts memory parameters based on user feedback using Bayesian Optimization principles.
-    
-    Core Logic:
-    1. Maintain a history of (params, reward) pairs for each user.
-    2. Use an Acquisition Function (Expected Improvement) to suggest next params.
-    3. Update best params when a higher reward is observed.
+    """Per-user adaptive parameter re-weighter (perturb-and-track-best).
+
+    Core logic:
+
+    1. Maintain a history of ``(params, reward)`` pairs for each user.
+    2. During the first 5 trials, propose parameters by uniformly
+       sampling ``S`` from a wide range; this is the warm-up phase.
+    3. Afterwards, perturb the current best parameters by multiplicative
+       Gaussian noise; widen the noise when recent rewards stagnate.
+    4. Update the stored best whenever a trial reports a higher reward.
+
+    This is **not** a Gaussian Process Bayesian Optimizer; the previous
+    docstring described it as "GP-BO with Expected Improvement" and
+    that framing is retracted.
     """
 
     def __init__(self):
@@ -68,10 +72,14 @@ class MetaCognitiveLearner:
         return self.user_states[user_id]
 
     def suggest_parameters(self, user_id: str) -> Tuple[float, Dict[str, float]]:
-        """
-        Suggest next set of parameters to try based on Bayesian Optimization.
-        If not enough data, return current best with slight noise (Exploration).
-        If enough data, compute Expected Improvement (Exploitation vs Exploration).
+        """Propose the next parameter set for ``user_id``.
+
+        The implemented policy is deliberately simple: during the
+        warm-up phase (fewer than 5 trials) sample ``S`` uniformly
+        within the default range to get broad coverage; afterwards,
+        perturb the current best parameters with Gaussian noise whose
+        scale widens if the most recent rewards are stagnant. No GP,
+        no Expected Improvement.
         """
         state = self.get_user_state(user_id)
         
@@ -82,11 +90,11 @@ class MetaCognitiveLearner:
             exploratory_S = random.uniform(self.default_S_range[0], self.default_S_range[1])
             return self._perturb_params(exploratory_S, state.best_weights, scale=0.3)
         
-        # Simple Bayesian Optimization Step (Surrogate + Acquisition)
-        # Note: For a full paper implementation, replace this block with 
-        # a real Gaussian Process Regressor from sklearn.gaussian_process
+        # Exploit-then-explore step (not a GP Bayesian-optimization
+        # step; see module docstring). `_get_best_trial` is retained in
+        # case a future refactor reintroduces a surrogate model.
         best_params, best_reward = self._get_best_trial(state)
-        
+
         # Heuristic: If recent rewards are stagnant, increase exploration
         recent_rewards = [t['reward'] for t in state.trials[-5:]]
         if len(recent_rewards) > 1 and max(recent_rewards) - min(recent_rewards) < 0.05:

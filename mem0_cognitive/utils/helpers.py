@@ -44,36 +44,35 @@ def compute_retention_score(elapsed_turns: int,
                            lambda_value: float = 1.0,
                            tau_base: float = 100.0,
                            tau_salience: float = 50.0) -> float:
-    """
-    Compute affective retention score for a memory item.
-    
-    Convenience wrapper around AffectiveRetentionScorer.
-    
-    Formula (paper Eq. 2):
-        S_eff = exp(-t/τ_effective) · (1 + λ·E)
-    
+    """Convenience wrapper around :class:`AffectiveRetentionScorer`.
+
+    Implements paper Eq. 2::
+
+        R_affective(m, t) = exp(-t / (tau_base * (1 + lambda * E)))
+
     Args:
-        elapsed_turns: Turns since memory creation
-        emotion_intensity: E ∈ [0, 1] from emotion extraction
-        lambda_value: Emotional inertia coefficient λ ∈ [0, 2]
-        tau_base: Base time constant τ_base
-        tau_salience: Salience-modulated time constant τ_salience
-        
+        elapsed_turns: Turns since memory creation.
+        emotion_intensity: ``E`` in ``[0, 1]``.
+        lambda_value: Emotional-inertia coefficient ``lambda`` in
+            ``[0, 2]``.
+        tau_base: Baseline time constant (turns).
+        tau_salience: **Deprecated.** Historically documented as a
+            second time constant, but the retention formula never
+            actually needed it; the scorer ignores it. Kept here only
+            so existing callers do not break. Supplying a non-default
+            value emits a ``DeprecationWarning``.
+
     Returns:
-        Retention score (higher = more likely to retain)
-        
-    Example:
-        >>> score = compute_retention_score(50, emotion_intensity=0.8)
-        >>> print(f"Score: {score:.3f}")
-        Score: 0.923
+        Retention probability in ``(0, 1]`` \u2014 monotonically
+        non-decreasing in ``emotion_intensity`` for ``lambda_value >= 0``.
     """
     from mem0_cognitive.retention.configs import RetentionConfig
     from mem0_cognitive.retention.scorer import AffectiveRetentionScorer
-    
+
     config = RetentionConfig(
         lambda_value=lambda_value,
         tau_base=tau_base,
-        tau_salience=tau_salience
+        tau_salience=tau_salience,
     )
     scorer = AffectiveRetentionScorer(config)
     return scorer.compute(elapsed_turns, emotion_intensity)

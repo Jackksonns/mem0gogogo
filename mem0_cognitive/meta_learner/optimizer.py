@@ -1,13 +1,18 @@
-"""
-Meta-Cognitive Optimizer: Bayesian hyperparameter tuning for personalized memory
+"""Meta-Cognitive Optimizer: per-user adaptive parameter tuning.
 
-Implements the meta-cognitive learning mechanism from Section 3.4 of our ACL 2026
-paper. This optimizer uses Bayesian optimization to learn user-specific memory
-parameters, adapting to individual "memory fingerprints" over time.
+Implements the adaptive-tuning heuristic described in Section 3.4 of the
+paper. The class name is retained for backward compatibility, but the
+actual algorithm is **not** Gaussian-Process Bayesian Optimization — it
+is a **top-k reward-weighted averaging heuristic** over observed
+(parameter, performance) pairs, clipped to per-dimension bounds. In
+earlier revisions both the paper and this module were labelled "GP-BO
+with Expected Improvement"; that framing was larger than the artifact.
+This module and the paper have been aligned to describe the heuristic
+actually implemented.
 
-Key insight: Different users have different memory needs. A one-size-fits-all
-approach (fixed λ, τ) is suboptimal. Our meta-learner continuously adapts
-parameters based on observed retention performance.
+A drop-in replacement using a real Gaussian Process surrogate (e.g.
+scikit-optimize, BoTorch) is a clean future extension: it slots in at
+``_weighted_topk_step`` without changing the public API.
 """
 
 import logging
@@ -20,31 +25,28 @@ logger = logging.getLogger(__name__)
 
 
 class MetaCognitiveOptimizer:
-    """
-    Learns optimal memory parameters per user via Bayesian optimization.
-    
-    As described in paper Section 3.4, this optimizer treats memory parameter
-    tuning as a black-box optimization problem:
-    
-        θ* = argmax_θ Performance(user, θ)
-    
-    where θ = {λ, τ_base, τ_salience} and Performance is measured by retention
-    accuracy or downstream task metrics.
-    
-    The optimizer maintains a probabilistic surrogate model (Gaussian Process)
-    of the performance landscape and uses an acquisition function to balance
-    exploration vs exploitation.
-    
-    Example usage:
-        >>> optimizer = MetaCognitiveOptimizer(config)
-        >>> # After collecting user interaction data...
-        >>> optimal_params = optimizer.optimize_for_user(
-        ...     user_id="alice",
-        ...     dialogue_history=conversation_turns,
-        ...     performance_metric=0.85
-        ... )
-        >>> print(optimal_params)
-        {'lambda_value': 1.2, 'tau_base': 120.0, 'tau_salience': 60.0}
+    """Per-user adaptive parameter tuner backed by a top-$k$ heuristic.
+
+    This optimizer treats per-user memory-parameter tuning as a black-box
+    search ``phi* = argmax_phi Performance(user, phi)`` over
+    ``phi = {lambda_value, tau_base, tau_salience}``. It is **not** a
+    Gaussian-Process Bayesian Optimizer. Instead, after an initial random
+    exploration phase of ``n_initial_samples`` observations, each update
+    step computes the reward-weighted mean of the top-$k$ observations in
+    the user's history and clips the result to the per-dimension bounds
+    declared in :class:`MetaLearnerConfig`. See paper Section 3.4,
+    Equation 6 for the exact update.
+
+    Example:
+        >>> optimizer = MetaCognitiveOptimizer()
+        >>> for perf in [0.60, 0.62, 0.71, 0.75, 0.74, 0.76]:
+        ...     phi = optimizer.optimize_for_user(
+        ...         user_id="alice",
+        ...         dialogue_history=[],
+        ...         performance_metric=perf,
+        ...     )
+        >>> sorted(phi.keys())
+        ['lambda_value', 'tau_base', 'tau_salience']
     """
     
     def __init__(self, config: Optional[MetaLearnerConfig] = None):
@@ -59,7 +61,11 @@ class MetaCognitiveOptimizer:
         self._user_histories = {}  # user_id -> list of (params, performance) tuples
         self._current_params = {}  # user_id -> current best params
         
-        logger.info(f"MetaCognitiveOptimizer initialized with acquisition={self.config.acquisition_function}")
+        logger.info(
+            "MetaCognitiveOptimizer initialized with strategy=%s (top-k weighted averaging; k=%d)",
+            self.config.update_strategy,
+            self.config.top_k,
+        )
     
     def optimize_for_user(self, 
                          user_id: str,
@@ -76,15 +82,19 @@ class MetaCognitiveOptimizer:
         Returns:
             Dictionary with optimized parameter values
             
-        Algorithm (Bayesian Optimization loop):
-            1. Add observation to history: (current_params, performance)
-            2. Update Gaussian Process surrogate model
-            3. Compute acquisition function over parameter space
-            4. Select next parameters to evaluate
-            5. Return updated best parameters
-            
-        Note: In practice, steps 3-4 require external libraries like scikit-optimize
-        or BoTorch. This implementation provides the framework.
+        Algorithm (paper Section 3.4, Eq. 6):
+            1. Append the current observation ``(current_params,
+               performance_metric)`` to the user's history.
+            2. If the user has fewer than ``n_initial_samples``
+               observations, sample the next ``phi`` uniformly from the
+               per-dimension bounds (random exploration).
+            3. Otherwise, take the top-``k`` observations by performance
+               and return their reward-weighted mean, clipped to the
+               per-dimension bounds.
+
+        This is not a Gaussian Process step; the earlier ``acquisition
+        function / Expected Improvement`` framing has been retracted in
+        favour of an honest description of the implemented heuristic.
         """
         # Get or initialize user history
         if user_id not in self._user_histories:
@@ -108,17 +118,20 @@ class MetaCognitiveOptimizer:
             f"with params={current_params}"
         )
         
-        # Check if enough data for Bayesian optimization
+        # Warm-up phase: use random exploration until we have enough
+        # observations for the top-k weighted-averaging update.
         if len(history) < self.config.n_initial_samples:
             logger.info(
-                f"User {user_id}: Only {len(history)} samples, "
-                f"need {self.config.n_initial_samples} before Bayesian optimization"
+                "User %s: %d samples, need %d before the top-k step",
+                user_id,
+                len(history),
+                self.config.n_initial_samples,
             )
             return self._explore_randomly(user_id)
         
-        # Run Bayesian optimization step
+        # Run the top-k weighted-averaging update.
         try:
-            optimized_params = self._bayesian_optimization_step(user_id)
+            optimized_params = self._weighted_topk_step(user_id)
             self._current_params[user_id] = optimized_params
             
             logger.info(
@@ -129,15 +142,18 @@ class MetaCognitiveOptimizer:
             return optimized_params
             
         except Exception as e:
-            logger.error(f"Bayesian optimization failed for user {user_id}: {e}")
+            logger.error(
+                "Adaptive-tuning update failed for user %s: %s", user_id, e
+            )
             # Fallback to current best
             return self._get_best_params_from_history(user_id)
     
     def _explore_randomly(self, user_id: str) -> Dict[str, float]:
-        """
-        Random exploration phase before Bayesian optimization kicks in.
-        
-        Samples parameters uniformly within bounds to build initial dataset.
+        """Warm-up phase: sample ``phi`` uniformly from ``param_bounds``.
+
+        Used for the first ``n_initial_samples`` observations so that
+        the subsequent top-$k$ weighted-averaging update has at least
+        some spread in its input.
         """
         import random
         
@@ -148,45 +164,45 @@ class MetaCognitiveOptimizer:
         logger.debug(f"User {user_id}: Random exploration → {params}")
         return params
     
-    def _bayesian_optimization_step(self, user_id: str) -> Dict[str, float]:
-        """
-        Perform one step of Bayesian optimization.
-        
-        This is a simplified implementation. Production version should use
-        scikit-optimize or similar library for proper Gaussian Process modeling.
+    def _weighted_topk_step(self, user_id: str) -> Dict[str, float]:
+        """Perform one top-$k$ reward-weighted-averaging update step.
+
+        Concretely: select the ``k = min(self.config.top_k, |history|)``
+        observations with the highest recorded performance for this
+        user, and for each parameter dimension return the reward-weighted
+        mean of that dimension across the top-$k$, projected onto the
+        per-dimension bounds declared in :class:`MetaLearnerConfig`.
+
+        This method is deliberately not a Gaussian-Process Bayesian
+        Optimization step. A future revision can swap this body out for
+        ``skopt.gp_minimize`` or ``botorch`` without changing the public
+        API.
         """
         history = self._user_histories[user_id]
-        
-        # Extract parameter vectors and performance values
-        X = []  # Parameter vectors
-        y = []  # Performance values
-        
-        for obs in history:
-            param_vector = [obs['params'][key] for key in self.config.param_bounds.keys()]
-            X.append(param_vector)
-            y.append(obs['performance'])
-        
-        # Simple approach: weighted average of top-k performers
-        # (Real BO would use GP + acquisition function)
-        k = min(5, len(X))
+
+        X = [
+            [obs["params"][key] for key in self.config.param_bounds.keys()]
+            for obs in history
+        ]
+        y = [obs["performance"] for obs in history]
+
+        k = min(self.config.top_k, len(X))
         top_indices = sorted(range(len(y)), key=lambda i: y[i], reverse=True)[:k]
-        
-        optimized_params = {}
+
+        optimized_params: Dict[str, float] = {}
         for param_idx, param_name in enumerate(self.config.param_bounds.keys()):
-            # Weighted average of top-k values
             weights = [y[i] for i in top_indices]
             total_weight = sum(weights)
-            
+
             if total_weight > 0:
                 value = sum(X[i][param_idx] * y[i] for i in top_indices) / total_weight
             else:
                 value = sum(X[i][param_idx] for i in top_indices) / k
-            
-            # Clip to bounds
+
             lower, upper = self.config.param_bounds[param_name]
             value = max(lower, min(upper, value))
             optimized_params[param_name] = value
-        
+
         return optimized_params
     
     def _get_best_params_from_history(self, user_id: str) -> Dict[str, float]:

@@ -1,11 +1,11 @@
 # Mem0-Cognitive: Core Research Module
 
-**Biologically-Inspired Memory Enhancement for LLM Agents**
+**Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory**
 
-This module implements the cognitive psychology mechanisms described in our ACL 2026 submission:
-- **Affective Retention Score**: Emotion-weighted forgetting curve
-- **Sleep Consolidation Engine**: Offline memory reconsolidation
-- **Meta-Cognitive Learner**: Bayesian hyperparameter optimization
+This module implements the cognitively-inspired mechanisms described in the companion paper:
+- **Affective Retention Score**: emotion-weighted Ebbinghaus decay (paper Eq. 2)
+- **Sleep Consolidation Engine**: offline memory reconsolidation (prototype; LLM summarization path is still being wired in)
+- **Meta-Cognitive Learner**: per-user adaptive parameter tuning via a **top-$k$ reward-weighted averaging heuristic** (an earlier draft framed this as GP-BO with Expected Improvement; that claim has been retracted in favour of the heuristic actually implemented — see `meta_learner/optimizer.py`)
 
 ## Installation
 
@@ -54,7 +54,7 @@ mem0_cognitive/
 ├── consolidation/     # Sleep-based memory consolidation
 │   ├── engine.py      # SleepConsolidator
 │   └── configs.py     # ConsolidationConfig
-├── meta_learner/      # Bayesian parameter optimization
+├── meta_learner/      # Adaptive parameter tuning (top-k weighted-averaging heuristic)
 │   ├── optimizer.py   # MetaCognitiveOptimizer
 │   └── configs.py     # MetaLearnerConfig
 └── utils/             # Helper functions

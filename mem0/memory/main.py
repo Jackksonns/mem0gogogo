@@ -22,6 +22,7 @@ from mem0.configs.prompts import (
 )
 from mem0.exceptions import ValidationError as Mem0ValidationError
 from mem0.memory.base import MemoryBase
+from mem0.memory.meta_learner import MetaCognitiveLearner
 from mem0.memory.setup import mem0_dir, setup_config
 from mem0.memory.storage import SQLiteManager
 from mem0.memory.telemetry import MEM0_TELEMETRY, capture_event
@@ -46,7 +47,16 @@ from mem0.utils.scoring import (
     normalize_bm25,
     score_and_rank,
 )
-from mem0.memory.meta_learner import MetaCognitiveLearner
+
+try:
+    # Optional Stage-5 wire-in. Importing ``CognitiveHooks`` from
+    # ``mem0_cognitive`` is guarded so that a bare install of the
+    # ``mem0`` package without the research subpackage continues to
+    # work. When unavailable the SDK falls back to the pre-Stage-5
+    # behaviour.
+    from mem0_cognitive.integration import CognitiveHooks  # type: ignore
+except ImportError:  # pragma: no cover - import is resolved at install time
+    CognitiveHooks = None  # type: ignore[assignment,misc]
 
 # Suppress SWIG deprecation warnings globally
 warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*SwigPy.*")
@@ -360,6 +370,15 @@ class Memory(MemoryBase):
 
         # Initialize Meta-Cognitive Learner for adaptive memory parameters
         self.meta_learner = MetaCognitiveLearner()
+
+        # Stage-5: opt-in cognitive hooks (emotion enrichment, retention
+        # reranking, sleep consolidation). Returns None unless the host
+        # opts in via MemoryConfig.cognitive or MEM0_COGNITIVE_ENABLED=1.
+        self.cognitive = (
+            CognitiveHooks.from_config(config) if CognitiveHooks is not None else None
+        )
+        if self.cognitive is not None:
+            logger.info("CognitiveHooks attached to Memory instance")
 
         if MEM0_TELEMETRY:
             # Create telemetry config manually to avoid deepcopy issues with thread locks
@@ -1429,6 +1448,23 @@ class Memory(MemoryBase):
             top_k=limit,
         )
 
+        # Stage-5 wire-in: affective retention reranking. Each candidate
+        # gets a ``retention_score`` (paper Eq. 2) and an
+        # ``affective_composite_score`` blending the existing ranking
+        # signal with the retention score; we then re-sort by the
+        # composite. Disabled / no-op when CognitiveHooks is off.
+        if self.cognitive is not None:
+            try:
+                self.cognitive.apply_retention_reranking(scored_results)
+                scored_results.sort(
+                    key=lambda c: float(
+                        c.get("affective_composite_score", c.get("score", 0.0)) or 0.0
+                    ),
+                    reverse=True,
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("CognitiveHooks.apply_retention_reranking failed: %s", exc)
+
         # Step 9: Format results
         promoted_payload_keys = [
             "user_id",
@@ -1455,6 +1491,15 @@ class Memory(MemoryBase):
                 score=scored["score"],
             ).model_dump()
 
+            # Surface the retention score alongside the raw score so
+            # downstream consumers can inspect or gate on it.
+            if "retention_score" in scored:
+                memory_item_dict["retention_score"] = scored["retention_score"]
+            if "affective_composite_score" in scored:
+                memory_item_dict["affective_composite_score"] = (
+                    scored["affective_composite_score"]
+                )
+
             for key in promoted_payload_keys:
                 if key in payload:
                     memory_item_dict[key] = payload[key]
@@ -1468,6 +1513,40 @@ class Memory(MemoryBase):
             original_memories.append(memory_item_dict)
 
         return original_memories
+
+    def run_sleep_consolidation(self, memory_store_adapter=None, **kwargs):
+        """Run one offline sleep-consolidation cycle (Stage-5 idle hook).
+
+        Delegates to :class:`mem0_cognitive.integration.CognitiveHooks`.
+        ``memory_store_adapter`` must implement the ``get_all / add /
+        delete`` protocol documented in
+        :mod:`mem0_cognitive.consolidation.engine`; if omitted the
+        caller is expected to supply their own adapter because the
+        underlying vector store APIs differ per provider and a
+        generic wrapper is left as future work.
+
+        No-op (returns a zero-stat dict with ``skipped_reason``) if
+        cognitive hooks are not enabled on this Memory instance.
+        """
+
+        if self.cognitive is None:
+            return {
+                "retrieved": 0,
+                "clusters_formed": 0,
+                "consolidated": 0,
+                "pruned": 0,
+                "duration_seconds": 0.0,
+                "skipped_reason": "cognitive_hooks_disabled",
+            }
+        if memory_store_adapter is None:
+            raise ValueError(
+                "run_sleep_consolidation requires a memory_store_adapter that "
+                "implements get_all/add/delete. See "
+                "mem0_cognitive.consolidation.engine.InMemoryStore for a "
+                "reference implementation, or wrap your vector store in a "
+                "thin adapter."
+            )
+        return self.cognitive.run_sleep_cycle(memory_store_adapter, **kwargs)
 
     def _compute_entity_boosts(self, query_entities, filters):
         """Compute per-memory entity boosts from entity store search.
@@ -1629,6 +1708,16 @@ class Memory(MemoryBase):
             new_metadata["created_at"] = datetime.now(timezone.utc).isoformat()
         new_metadata["updated_at"] = new_metadata["created_at"]
         new_metadata["text_lemmatized"] = lemmatize_for_bm25(data)
+
+        # Stage-5 wire-in: enrich with emotion metadata BEFORE persisting
+        # so retention scoring + sleep consolidation downstream see the
+        # same fields the paper refers to as E, valence, method. The
+        # hook is a no-op when CognitiveHooks is disabled.
+        if self.cognitive is not None:
+            try:
+                self.cognitive.enrich_memory_metadata(data, new_metadata)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("CognitiveHooks.enrich_memory_metadata failed: %s", exc)
 
         self.vector_store.insert(
             vectors=[embeddings],
