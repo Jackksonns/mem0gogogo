@@ -74,11 +74,14 @@ for r in results:
           "retention=", r.get("retention_score"),
           "composite=", r.get("affective_composite_score"))
 
-# Run a sleep-consolidation pass offline
-m.run_sleep_consolidation()
+# Run a sleep-consolidation pass offline. Requires a memory-store adapter
+# that exposes get_all / add / delete; a reference in-memory implementation
+# lives at mem0_cognitive.consolidation.engine.InMemoryStore.
+from mem0_cognitive.consolidation.engine import InMemoryStore
+m.run_sleep_consolidation(memory_store_adapter=InMemoryStore())
 ```
 
-There's also a runnable no-API-key demo at <ref_file file="/home/ubuntu/repos/mem0gogogo/examples/cognitive_memory_demo.py" /> that walks through emotion extraction, retention scoring, and sleep consolidation end-to-end against a stub LLM.
+There's also a runnable no-API-key demo at [examples/cognitive_memory_demo.py](examples/cognitive_memory_demo.py) that walks through emotion extraction, retention scoring, and sleep consolidation end-to-end against a stub LLM.
 
 ---
 
