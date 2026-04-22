@@ -57,30 +57,14 @@
 
 ## Experimental Results (numbers reproduced from `paper/sections/experiments.tex`)
 
-The manuscript's main result table is over our synthetic CognitiveBench simulator (1000 dialogue turns, Retention@10 / Noise Ratio / token savings / latency), with a secondary accuracy table on LoCoMo. The numbers below match those tables verbatim:
+The manuscript commits to two evaluation tracks: a synthetic **CognitiveBench** long-context dialogue simulator (Retention@10 / Noise Ratio / Token Savings / Latency) and a secondary track on **LoCoMo** accuracy. Baselines: Vanilla RAG, Mem0 Original, Generative Agents, MemGPT, Zep.
 
-**Main: CognitiveBench (1000 turns)**
-
-| System | Retention@10 | Noise Ratio | Token Savings | Latency (ms) |
-| :--- | :---: | :---: | :---: | :---: |
-| Vanilla RAG | 55.3% | 38.2% | — | 12 |
-| Mem0 Original | 62.1% | 31.5% | 15% | 18 |
-| Generative Agents | 58.7% | 35.8% | 22% | 245 |
-| MemGPT | 64.2% | 29.1% | 28% | 35 |
-| Zep | 61.5% | 32.4% | 20% | 25 |
-| **Mem0-Cognitive (Ours)** | **79.4%** | **12.3%** | **55%** | **48** |
-
-**Secondary: LoCoMo accuracy**
-
-| System | Accuracy |
-| :--- | :---: |
-| Vanilla RAG | 61.2 |
-| Mem0 Original | 65.8 |
-| Generative Agents | 63.4 |
-| MemGPT | 67.1 |
-| **Mem0-Cognitive (Ours)** | **72.5** |
-
-> **Reproducibility status (as of this commit):** evaluation scripts are in the middle of a rebuild (tracked in a follow-up PR). Until then, the numbers above should be treated as the manuscript's claims rather than one-click reproducible artifacts. The earlier README numbers for LongMemEval (93.4) and BEAM (64.1 / 48.6) were inconsistent with the manuscript and have been removed pending real runs.
+> **Reproducibility status (as of this commit):** the evaluation harness for this paper has been split into two top-level directories, and the harness that belongs to *this* paper is **released as a skeleton** — configs, adapter interfaces, and a checklist, no numeric results yet.
+>
+> - [`evaluation_cognitive/`](./evaluation_cognitive/) — the harness that produces the paper's numbers. See its [README](./evaluation_cognitive/README.md) for the honest reproducibility checklist. The CognitiveBench data generator and the ablation runner currently raise `NotImplementedError`; headline numbers will be added to the paper's tables only once the checklist is fully ticked and the runner has written stable output under `evaluation_cognitive/expected_outputs/`.
+> - [`evaluation_mem0_original/`](./evaluation_mem0_original/) — the unmodified upstream Mem0 evaluation harness (the old `evaluation/` directory, renamed in Stage 6 via `git mv` so git history is preserved). It is retained only for baseline / reference comparisons and is **not** used to produce any number in this paper.
+>
+> Earlier revisions of this README quoted specific numeric values for CognitiveBench (Retention@10 79.4%, etc.) and LoCoMo (72.5) in the two tables below; those values have been removed pending a real run against the cognitive harness. The earlier README numbers for LongMemEval (93.4) and BEAM (64.1 / 48.6) had already been removed in Stage 1 for the same reason.
 
 ---
 
@@ -135,11 +119,13 @@ This repository accompanies our ACL 2026 submission. Key components:
 | :--- | :--- | :--- |
 | **Methodology** | `mem0_cognitive/{emotion,retention,consolidation,meta_learner}/` | Core algorithms: emotion analyzer, affective retention scorer, sleep consolidator, adaptive parameter tuner |
 | **System integration** | `mem0/memory/main.py`, `mem0/memory/meta_learner.py` | Points where cognitive modules are wired into the underlying Mem0 `Memory` class (retrieval-time re-ranking; emotion extraction and consolidation wiring are work-in-progress) |
-| **Results** | `paper/sections/experiments.tex` | Main result table + ablation table |
+| **Results** | `paper/sections/experiments.tex` | Research questions, evaluation protocol, and the ablation matrix (numeric cells intentionally empty in this release; see `evaluation_cognitive/README.md`). |
 | **Appendix** | `paper/sections/appendix.tex` | Prompt templates, CognitiveBench generation protocol, case studies |
 | **Full Paper** | `paper/main.tex` | LaTeX source |
+| **Eval (ours, skeleton)** | [`evaluation_cognitive/`](./evaluation_cognitive/) | CognitiveBench generator interface, LoCoMo adapter interface, ablation config YAMLs, runner / table-generation stubs, and the honest reproducibility checklist. |
+| **Eval (upstream Mem0)** | [`evaluation_mem0_original/`](./evaluation_mem0_original/) | Unmodified upstream Mem0 evaluation harness (renamed from `evaluation/` via `git mv`); retained for baseline / reference comparisons only. |
 
-**Reproducibility status:** The experiment runner under `evaluation/` is still the upstream Mem0 evaluation harness (it has `--technique_type`, not the `--benchmark`/`--ablation` flags that earlier drafts of this README advertised). A dedicated `evaluation_cognitive/` directory with CognitiveBench generator, LoCoMo adapter, and ablation runner is being added in a follow-up PR; until it lands, the paper's numbers should be read as claims, not as artifacts you can regenerate with a single command.
+**Reproducibility status:** The paper's experiments section is intentionally empty-celled in this release; see the checklist in [`evaluation_cognitive/README.md`](./evaluation_cognitive/README.md). Numeric tables in `paper/sections/experiments.tex` will be populated only after every unchecked box in that checklist is ticked and the runner has produced stable output under `evaluation_cognitive/expected_outputs/`.
 
 ---
 
@@ -200,13 +186,29 @@ score = scorer.compute(elapsed_turns=50, emotion_intensity=emotion["intensity"])
 
 ### Running Experiments
 
-> **The evaluation harness is currently being rebuilt.** The `evaluation/` directory at this revision is still the upstream Mem0 evaluation code — it supports `--technique_type {mem0,rag,zep,openai,langmem}` and `--method {add,search}`, not the `--benchmark locomo` / `--ablation full` invocations referenced in earlier drafts of this README. A new `evaluation_cognitive/` directory (CognitiveBench generator + seeds, LoCoMo adapter, ablation runner, table-generation scripts) is tracked in a separate PR.
+> **The cognitive evaluation harness is published as a skeleton.** The configs, generator interfaces, adapter interfaces, and reproducibility checklist live under [`evaluation_cognitive/`](./evaluation_cognitive/); the CognitiveBench data generator and the end-to-end ablation runner currently raise `NotImplementedError`. See [`evaluation_cognitive/README.md`](./evaluation_cognitive/README.md) for the full checklist.
 
-What works today against the upstream harness (for reference / baseline Mem0 numbers only, not the cognitive experiments):
+What the current release supports:
 
 ```bash
-python evaluation/run_experiments.py --technique_type mem0 --method add
-python evaluation/run_experiments.py --technique_type mem0 --method search
+# Inspect the ablation configurations that the runner will consume:
+ls evaluation_cognitive/configs/
+# ablation_full.yaml
+# ablation_no_emotion.yaml
+# ablation_no_consolidation.yaml
+# ablation_no_meta_learner.yaml
+# cognitivebench_seeds.yaml
+
+# Skeleton invocation (will raise NotImplementedError until the runner is wired):
+python -m evaluation_cognitive.scripts.run_ablation \
+    --config evaluation_cognitive/configs/ablation_full.yaml
+```
+
+For reference / baseline Mem0 numbers (upstream harness, **not** part of this paper's results):
+
+```bash
+python evaluation_mem0_original/run_experiments.py --technique_type mem0 --method add
+python evaluation_mem0_original/run_experiments.py --technique_type mem0 --method search
 ```
 
 ---

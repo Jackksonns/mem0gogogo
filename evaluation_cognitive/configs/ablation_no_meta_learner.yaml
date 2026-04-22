@@ -1,0 +1,39 @@
+# Ablation: disable the meta-learner.
+# tau_base and lambda are frozen at their paper-reported defaults.
+#
+# Status: config-only. No runnable code depends on this file yet.
+run_id: ablation_no_meta_learner
+description: >
+  Disable per-user adaptive tuning. Emotion, retention, and consolidation
+  all still run; parameters are pinned to the paper's reported defaults.
+
+dataset:
+  name: cognitivebench
+  seeds: configs/cognitivebench_seeds.yaml
+
+memory:
+  cognitive:
+    enabled: true
+    emotion:
+      enabled: true
+    retention:
+      enabled: true
+      lambda_value: 1.0
+      tau_base: 100.0
+      enable_emotion_weighting: true
+    consolidation:
+      enabled: true
+      min_memories_for_consolidation: 10
+      strategy: summarize
+    meta_learner:
+      enabled: false
+
+evaluation:
+  metrics:
+    - retention_at_k
+    - consolidation_rate
+    - answer_attribution_accuracy
+  num_seeds: 50
+  report_std: true
+
+output_dir: expected_outputs/ablation_no_meta_learner

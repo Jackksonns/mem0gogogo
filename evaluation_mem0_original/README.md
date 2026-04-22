@@ -1,5 +1,23 @@
 # Mem0: Building Production‑Ready AI Agents with Scalable Long‑Term Memory
 
+> **Upstream evaluation harness — NOT part of this paper's contribution.**
+>
+> This directory is the **unmodified upstream Mem0 evaluation harness** from
+> [mem0ai/mem0](https://github.com/mem0ai/mem0). It was renamed from
+> `evaluation/` to `evaluation_mem0_original/` in Stage 6 of this repository's
+> remediation plan so that no reader can confuse it with the cognitive-memory
+> evaluation we contribute. The numbers and code paths here refer to the
+> original Mem0 paper ([arXiv:2504.19413](https://arxiv.org/abs/2504.19413))
+> and **not** to any results reported in our paper.
+>
+> For the evaluation harness that belongs to *this* paper ("Emotion-Weighted
+> Forgetting and Sleep Consolidation for Adaptive LLM Memory"), see
+> [`../evaluation_cognitive/`](../evaluation_cognitive/). That directory
+> currently ships as a skeleton (config + generator interfaces + adapter
+> stubs + reproducibility checklist); the CognitiveBench data generator and
+> the end-to-end ablation runner are explicitly marked as work-in-progress
+> in its README.
+
 [![arXiv](https://img.shields.io/badge/arXiv-Paper-b31b1b.svg)](https://arxiv.org/abs/2504.19413)
 [![Website](https://img.shields.io/badge/Website-Project-blue)](https://mem0.ai/research)
 
