@@ -1,70 +1,53 @@
-# Mem0-Cognitive: Core Research Module
+# `mem0_cognitive` — the dreamfeed extensions
 
-**Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory**
+This package holds the three cognitively-inspired mechanisms that the [dreamfeed](../README.md) fork adds on top of upstream [mem0](https://github.com/mem0ai/mem0):
 
-This module implements the cognitively-inspired mechanisms described in the companion paper:
-- **Affective Retention Score**: emotion-weighted Ebbinghaus decay (paper Eq. 2)
-- **Sleep Consolidation Engine**: offline memory reconsolidation (prototype; LLM summarization path is still being wired in)
-- **Meta-Cognitive Learner**: per-user adaptive parameter tuning via a **top-$k$ reward-weighted averaging heuristic** (an earlier draft framed this as GP-BO with Expected Improvement; that claim has been retracted in favour of the heuristic actually implemented — see `meta_learner/optimizer.py`)
+- **Affective retention** — emotion-weighted Ebbinghaus decay, used to re-rank retrieval candidates by an `affective_composite = α·similarity + (1-α)·retention` score.
+- **Sleep consolidation** — an offline pass that clusters near-duplicate memories, abstracts each cluster with an LLM, writes the consolidated memory back to the vector store, and audits the originals.
+- **Meta-cognitive learner** — a per-user top-$k$ reward-weighted-averaging heuristic that slowly nudges the retention-law parameters (`λ`, `τ_base`) toward whatever is empirically working for that user. Not a Bayesian optimizer; see `meta_learner/optimizer.py` for the honest formulation.
+
+All three are independently ablatable and opt-in via `MemoryConfig.cognitive` on the upstream `Memory` class.
 
 ## Installation
 
-```bash
-pip install -e .
-```
+Installed automatically when you `pip install -e .` from the repo root.
 
-## Quick Start
+## Quick start
 
 ```python
 from mem0_cognitive import (
     EmotionAnalyzer,
     AffectiveRetentionScorer,
     SleepConsolidator,
-    MetaCognitiveOptimizer
+    MetaCognitiveOptimizer,
 )
 
-# Extract emotion from utterance
 analyzer = EmotionAnalyzer()
 emotion = analyzer.extract("I love this feature!")
-print(f"Intensity: {emotion['intensity']}")  # 0.92
 
-# Compute retention score
 scorer = AffectiveRetentionScorer()
-score = scorer.compute(elapsed_turns=50, emotion_intensity=0.85)
-print(f"Retention: {score:.3f}")  # 0.923
+retention = scorer.compute(elapsed_turns=50, emotion_intensity=emotion["intensity"])
 
-# Run consolidation cycle (async)
-# stats = await consolidator.run_consolidation_cycle()
-
-# Optimize parameters per user
 optimizer = MetaCognitiveOptimizer()
 params = optimizer.optimize_for_user("alice", history, performance=0.85)
 ```
 
-## Architecture
+## Layout
 
 ```
 mem0_cognitive/
-├── emotion/           # Zero-shot LLM emotion extraction
-│   ├── analyzer.py    # EmotionAnalyzer class
-│   └── configs.py     # EmotionConfig dataclass
-├── retention/         # Affective retention scoring
-│   ├── scorer.py      # AffectiveRetentionScorer
-│   └── configs.py     # RetentionConfig
-├── consolidation/     # Sleep-based memory consolidation
-│   ├── engine.py      # SleepConsolidator
-│   └── configs.py     # ConsolidationConfig
-├── meta_learner/      # Adaptive parameter tuning (top-k weighted-averaging heuristic)
-│   ├── optimizer.py   # MetaCognitiveOptimizer
-│   └── configs.py     # MetaLearnerConfig
-└── utils/             # Helper functions
-    └── helpers.py     # Convenience wrappers
+├── emotion/           # Zero-shot LLM + lexicon-fallback emotion extractor
+├── retention/         # Emotion-weighted retention scorer (paper Eq. 2)
+├── consolidation/     # Async sleep-consolidation engine
+├── meta_learner/      # Top-k reward-weighted-averaging parameter tuner
+├── integration/       # Hooks that wire the above into mem0.Memory
+└── utils/             # Shared helpers
 ```
 
-## Paper Reference
+## Math / theory
 
-"Mem0-Cognitive: Emotion-Weighted Forgetting and Sleep Consolidation for Adaptive LLM Memory." ACL 2026 submission. Title is kept in sync with the root `README.md`, `paper/README.md`, and `paper/main.tex`.
+The long-form writeup of the retention law, the consolidation algorithm, and the averaging heuristic lives in `paper/` at the repo root. That directory is documentation, not a submission artifact.
 
 ## License
 
-Apache 2.0
+Apache 2.0 (inherited from upstream mem0).

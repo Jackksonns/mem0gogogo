@@ -2,19 +2,14 @@
 \label{sec:experiments}
 
 \noindent\textbf{Status of this section.}
-The evaluation harness accompanying this paper lives in
-\texttt{evaluation\_cognitive/} of the public repository and is currently
-released as a skeleton: configuration schemas, dataset-adapter interfaces,
-and a reproducibility checklist. The CognitiveBench data generator and the
-end-to-end ablation runner are explicitly marked as work-in-progress in
-\texttt{evaluation\_cognitive/README.md}. Consistent with this
-artifact-first stance, this section describes the research questions, the
-evaluation protocol we commit to, and the ablation matrix we have wired up
-in the configs, but intentionally does \emph{not} quote headline numeric
-results whose reproduction currently depends on an unchecked box in the
-checklist. Numeric tables will be added once the checklist is fully
-ticked; the corresponding tables and figures are referenced here by label
-but deferred. The separate upstream benchmark harness in
+The companion repository does \emph{not} ship an evaluation harness for
+the three cognitive modules. This section describes the research
+questions, the evaluation protocol we would commit to, and the ablation
+matrix we would run \emph{if} such a harness existed, but intentionally
+does \emph{not} quote headline numeric results. Every numeric table and
+figure below is a forward reference: the cells are empty by construction,
+and should stay empty until an evaluation harness has been implemented
+and produced stable outputs. The separate upstream benchmark harness in
 \texttt{evaluation\_mem0\_original/} is unchanged from
 \cite{mem0} and is \emph{not} used to produce any result in this paper.
 
@@ -30,8 +25,8 @@ We organise the evaluation around three research questions:
 
 \paragraph{Datasets.} We plan to evaluate on two complementary benchmarks:
 \begin{enumerate}
-    \item \textbf{CognitiveBench}: an in-repository long-context dialogue simulator generating multi-turn conversations with injected factual anchors, emotional events, recurring patterns, and distractor turns. The generator's interface and seed-manifest schema are specified in \texttt{evaluation\_cognitive/generators/cognitivebench.py} and \texttt{evaluation\_cognitive/configs/cognitivebench\_seeds.yaml}; details and the leak-check protocol are in Appendix~\ref{app:cognitivebench}. The generator itself currently raises \texttt{NotImplementedError}; freezing the seed manifest and implementing the generator is the precondition for any CognitiveBench-derived number reported in a later version of this paper.
-    \item \textbf{LoCoMo}~\cite{locomo}: we adapt our system to LoCoMo's evaluation protocol via the \texttt{LoCoMoAdapter} interface in \texttt{evaluation\_cognitive/adapters/locomo.py}. The adapter is interface-only in this release; its \texttt{describe\_metric} method is the single source of truth for how we map LoCoMo's answer attribution to our retention-conditioned retrieval metric, and must be implemented before any LoCoMo number is reported.
+    \item \textbf{CognitiveBench}: a long-context dialogue simulator generating multi-turn conversations with injected factual anchors, emotional events, recurring patterns, and distractor turns. A seed-manifest schema and leak-check protocol are sketched in Appendix~\ref{app:cognitivebench}; the generator itself is not implemented in this fork, and freezing the seed manifest and implementing the generator is the precondition for any CognitiveBench-derived number reported in a later version of this paper.
+    \item \textbf{LoCoMo}~\cite{locomo}: to evaluate on LoCoMo's test set, a system-specific adapter would have to pin LoCoMo's answer-attribution label to the metric defined below. The three candidate definitions (answer-accuracy, retrieval-faithfulness, attribution-correctness) must not be mixed silently; choosing one is a precondition for any LoCoMo number reported in a later version of this paper.
 \end{enumerate}
 
 \paragraph{Baselines.} The planned comparison set is
@@ -48,27 +43,17 @@ We organise the evaluation around three research questions:
     \item \textbf{Token Efficiency}: Reduction in context tokens consumed during retrieval, relative to Vanilla RAG.
     \item \textbf{Latency Overhead}: Additional inference time introduced by cognitive operations.
 \end{itemize}
-The precise mapping from LoCoMo's answer-attribution label to Retention@K
-is pinned in \texttt{LoCoMoAdapter.describe\_metric}; the three candidate
-definitions flagged in our design notes
-(answer-accuracy, retrieval-faithfulness, attribution-correctness) must not
-be mixed silently.
+\paragraph{Evaluation protocol on LoCoMo.} Historical dialogue turns would be injected sequentially into the system's memory store, with retrieval performed only at query time (not per turn) to match LoCoMo's setting, against whichever candidate metric (answer-accuracy, retrieval-faithfulness, or attribution-correctness) is pinned.
 
-\paragraph{Evaluation protocol on LoCoMo.} We inject historical dialogue turns sequentially into \textsc{Mem0-Cognitive}'s memory store, perform retrieval only at query time (not per turn) to match LoCoMo's setting, and apply the \texttt{LoCoMoAdapter} metric described above.
-
-\paragraph{Ablation matrix.} The four cells we commit to evaluating are materialised as four YAML files in \texttt{evaluation\_cognitive/configs/}: \texttt{ablation\_full.yaml} (all three modules on), \texttt{ablation\_no\_emotion.yaml}, \texttt{ablation\_no\_consolidation.yaml}, and \texttt{ablation\_no\_meta\_learner.yaml}. The ablation runner at \texttt{evaluation\_cognitive/scripts/run\_ablation.py} is currently an interface-only stub; when implemented it will consume any of these configs and write per-turn outputs under \texttt{evaluation\_cognitive/expected\_outputs/}.
+\paragraph{Ablation matrix.} The four cells we would commit to evaluating are: \emph{full} (all three modules on), \emph{$-$emotion}, \emph{$-$consolidation}, and \emph{$-$meta-learner}. In the companion codebase, each module is independently disableable via \texttt{MemoryConfig.cognitive}, so these ablations are wiring-complete; only the runner that exercises them on a fixed benchmark is missing.
 
 \subsection{Main Results: Long-Term Dialogue Simulation}
 \label{subsec:main_results}
 
-Table~\ref{tab:main_results} will report the primary comparison on
-CognitiveBench once the generator is frozen and
-\texttt{evaluation\_cognitive/scripts/run\_ablation.py} has produced a
-stable release under
-\texttt{evaluation\_cognitive/expected\_outputs/ablation\_full/}.
-In the current artifact release, this table is intentionally left empty;
-quoting numeric values here without a reproducible source would violate
-the checklist in \texttt{evaluation\_cognitive/README.md}.
+Table~\ref{tab:main_results} would report the primary comparison on
+CognitiveBench once a generator and runner have been implemented.
+In the current release of this writeup, the table is intentionally left
+empty; quoting numeric values here would have no reproducible source.
 
 \begin{table}[t]
 \centering
@@ -86,7 +71,7 @@ Zep & --- & --- & --- & --- \\
 \textbf{Mem0-Cognitive (Ours)} & --- & --- & --- & --- \\
 \bottomrule
 \end{tabular}
-\caption{Main results on CognitiveBench. Table intentionally empty in this release; values will be populated from \texttt{evaluation\_cognitive/expected\_outputs/ablation\_full/} once the generator and runner checklist in \texttt{evaluation\_cognitive/README.md} is fully ticked.}
+\caption{Main results on CognitiveBench. Table intentionally empty in this release; values would be populated from an evaluation-harness run that has not been implemented.}
 \label{tab:main_results}
 \end{table}
 
@@ -98,11 +83,12 @@ factorial ablation over the three modules described in
 Section~\ref{sec:methodology}: emotion weighting, sleep consolidation, and
 the top-$k$-weighted meta-learner (note that the last module is a
 heuristic, not GP-based Bayesian Optimisation; see
-\S\ref{sec:methodology}). The four configurations that correspond to the
-paper's headline ablation rows (baseline, $-$emotion, $-$consolidation,
-$-$meta-learner, full) are wired up as config files under
-\texttt{evaluation\_cognitive/configs/}; the remaining cells in
-Table~\ref{tab:ablation} will be added when the runner is implemented.
+\S\ref{sec:methodology}). Each module is independently disableable at the
+\texttt{MemoryConfig.cognitive} level, so the four configurations
+corresponding to the ablation rows below (baseline, $-$emotion,
+$-$consolidation, $-$meta-learner, full) are wiring-complete; the
+remaining cells in Table~\ref{tab:ablation} would be filled in by an
+ablation runner that has not been implemented.
 
 \begin{table}[t]
 \centering
@@ -122,18 +108,17 @@ Table~\ref{tab:ablation} will be added when the runner is implemented.
 \textbf{\cmark} & \textbf{\cmark} & \textbf{\cmark} & --- & --- \\
 \bottomrule
 \end{tabular}
-\caption{Factorial ablation matrix on CognitiveBench. Cells intentionally empty in this release; see \texttt{evaluation\_cognitive/configs/ablation\_*.yaml} for the exact runner configuration of each row.}
+\caption{Factorial ablation matrix on CognitiveBench. Cells intentionally empty in this release; each row corresponds to a specific combination of \texttt{MemoryConfig.cognitive} flags.}
 \label{tab:ablation}
 \end{table}
 
 \subsection{Memory Growth Dynamics}
 \label{subsec:memory_growth}
 
-Figure~\ref{fig:memory_growth} will visualise the evolution of stored
+Figure~\ref{fig:memory_growth} would visualise the evolution of stored
 memory items as dialogue length grows. As with the tables above, the
-figure is a forward reference in this release: the underlying data will
-be produced by \texttt{evaluation\_cognitive/scripts/run\_ablation.py}
-once implemented, and only then will the plot be generated and linked.
+figure is a forward reference in this release: the underlying data
+would be produced by an ablation runner that has not been implemented.
 The qualitative prediction is that consolidation induces a stable
 equilibrium in store size, while naive accumulation grows linearly and
 fixed-window truncation loses long-range dependencies.
@@ -141,13 +126,12 @@ fixed-window truncation loses long-range dependencies.
 \subsection{Real-World Validation on LoCoMo}
 \label{subsec:locomo_results}
 
-To probe generalisation beyond our synthetic benchmark, we plan to
-evaluate on LoCoMo's test set through
-\texttt{evaluation\_cognitive/adapters/locomo.py}. As with
-CognitiveBench, Table~\ref{tab:locomo} is intentionally empty in this
-release; numeric entries will only appear once the adapter's
-\texttt{describe\_metric} is pinned and the runner has emitted a stable
-output directory.
+To probe generalisation beyond the synthetic benchmark, a later version
+of this writeup would evaluate on LoCoMo's test set through a
+system-specific adapter. As with CognitiveBench, Table~\ref{tab:locomo}
+is intentionally empty in this release; numeric entries would only
+appear once a LoCoMo adapter is implemented and its metric definition is
+pinned.
 
 \begin{table}[h]
 \centering
@@ -164,25 +148,22 @@ MemGPT & --- \\
 \textbf{Mem0-Cognitive (Ours)} & --- \\
 \bottomrule
 \end{tabular}
-\caption{Accuracy on LoCoMo. Values will be populated from
-\texttt{evaluation\_cognitive/expected\_outputs/locomo/} once the
-\texttt{LoCoMoAdapter} is implemented and its metric definition is
-pinned.}
+\caption{Accuracy on LoCoMo. Values would be populated from a
+LoCoMo-adapter run that has not been implemented.}
 \label{tab:locomo}
 \end{table}
 
 \subsection{Qualitative Analysis: Case Studies}
 \label{subsec:case_studies}
 
-When the runner is implemented, two illustrative case studies will be
-emitted directly from logged consolidation and retrieval traces: (i) an
-emotion-weighted retention case in which a rare but high-emotion
-fact persists despite low access frequency, and (ii) a sleep-consolidation
-case in which multiple related low-level episodes are abstracted into a
-single semantic memory. The corresponding dialogue transcripts and audit
-logs will be checked in under
-\texttt{evaluation\_cognitive/expected\_outputs/} and cross-referenced
-from Appendix~\ref{app:case_studies}.
+When an evaluation runner is available, two illustrative case studies
+would be emitted directly from logged consolidation and retrieval
+traces: (i) an emotion-weighted retention case in which a rare but
+high-emotion fact persists despite low access frequency, and (ii) a
+sleep-consolidation case in which multiple related low-level episodes
+are abstracted into a single semantic memory. The corresponding
+dialogue transcripts and audit logs would then be cross-referenced from
+Appendix~\ref{app:case_studies}.
 
 \subsection{Discussion: Expected Ablation Profile}
 \label{subsec:discussion}
@@ -194,6 +175,6 @@ hypothesis, consistent with the mechanism analysis in
 contributor to noise reduction, that emotion weighting primarily affects
 tail retention of high-salience events, and that the top-$k$-weighted
 meta-learner yields modest but monotone per-user improvements on
-longer horizons. We deliberately avoid committing to numeric values here
-until the runner produces them; a future version of this paper will
-either confirm or falsify this profile based on the checked-in outputs.
+longer horizons. We deliberately avoid committing to numeric values here;
+a future version of this writeup would either confirm or falsify this
+profile once an evaluation runner has produced actual outputs.
